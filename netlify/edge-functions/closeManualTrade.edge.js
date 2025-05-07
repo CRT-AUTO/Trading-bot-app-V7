@@ -380,7 +380,7 @@ export default async function handler(request, context) {
         const params = new URLSearchParams({
           category: 'linear',
           symbol: formattedSymbol,
-          limit: '200',  // Increased limit to find more potential matches
+          limit: '100',  // Increased limit to find more potential matches
           startTime: startTime.toString(),
           endTime: endTime.toString(),
           timestamp,
@@ -525,6 +525,11 @@ export default async function handler(request, context) {
         trade_close_exe_time: new Date().toISOString(),
         notes: notes || trade.notes,
         pic_exit: exitPicUrl || trade.pic_exit,
+        entry_notes: entryNotes || trade.entry_notes,
+        mid_notes: midTradeNotes || trade.mid_notes,
+        pic_entry: entryPicUrl || trade.pic_entry,
+        take_profit: takeProfit || trade.take_profit,
+        close_price: exitPrice || trade.close_price,
         updated_at: new Date().toISOString()
       };
       
@@ -596,8 +601,8 @@ export default async function handler(request, context) {
       status: 'closed',
       close_time: new Date().toISOString(),
       trade_close_exe_time: new Date().toISOString(),
-      close_price: avgExitPrice,
-      avg_entry: avgEntryPrice,
+      close_price: avgExitPrice || exitPrice,
+      avg_entry: avgEntryPrice || trade.entry_price,
       pnl: realizedPnl,
       finish_r: finishR,
       finish_usd: realizedPnl,
@@ -608,6 +613,10 @@ export default async function handler(request, context) {
       total_trade_time_seconds: totalTradeTimeSeconds,
       notes: notes || trade.notes,
       pic_exit: exitPicUrl || trade.pic_exit,
+      entry_notes: entryNotes || trade.entry_notes,
+      mid_notes: midTradeNotes || trade.mid_notes,
+      pic_entry: entryPicUrl || trade.pic_entry,
+      take_profit: takeProfit || trade.take_profit,
       updated_at: new Date().toISOString()
     };
     

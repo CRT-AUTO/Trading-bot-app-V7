@@ -38,7 +38,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
   const [exitTaker, setExitTaker] = useState<boolean>(true);
   const [exitMaker, setExitMaker] = useState<boolean>(false);
 
-  // Journal entry fields (moved from JournalEntry component)
+  // Journal entry fields
   const [systemName, setSystemName] = useState<string>('');
   const [entryPicUrl, setEntryPicUrl] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
@@ -59,6 +59,9 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState<boolean>(false);
+
+  // Ref for trade details container
+  const tradeDetailsRef = useRef<HTMLDivElement>(null);
 
   // Open trade management enhancements
   const [tradeEntryNotes, setTradeEntryNotes] = useState<Record<string, string>>({});
@@ -102,7 +105,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
       const parsedTrades = JSON.parse(savedTrades);
       setOpenTrades(parsedTrades);
       
-      // Initialize state for trade journal fields
       const entryNotesInit: Record<string, string> = {};
       const midNotesInit: Record<string, string> = {};
       const exitNotesInit: Record<string, string> = {};
@@ -127,7 +129,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
       setTradeTakeProfits(takeProfitsInit);
     }
 
-    // Load saved calculator settings
     const savedSettings = localStorage.getItem('calculatorSettings');
     if (savedSettings) {
       const settings = JSON.parse(savedSettings);
@@ -162,7 +163,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
         
         setApiKeys(data || []);
         
-        // Select default key if available
         const defaultKey = data?.find(key => key.is_default);
         if (defaultKey) {
           setSelectedApiKeyId(defaultKey.id);
@@ -175,7 +175,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     fetchApiKeys();
   }, [user, supabase]);
   
-  // Save calculator settings to localStorage when they change
+  // Save calculator settings to localStorage
   useEffect(() => {
     const settings = {
       takerFee,
@@ -203,9 +203,8 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     testMode
   ]);
 
-  // Save open trades to localStorage whenever they change
+  // Save open trades to localStorage
   useEffect(() => {
-    // Update trades with the latest journal field values
     const updatedTrades = openTrades.map(trade => ({
       ...trade,
       notes: tradeExitNotes[trade.tradeId] || trade.notes,
@@ -227,14 +226,14 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     tradeTakeProfits
   ]);
 
-  // Update entry price when live price changes
+  // Update entry price with live price
   useEffect(() => {
     if (livePrice) {
       setEntryPrice(parseFloat(livePrice).toFixed(2));
     }
   }, [livePrice]);
 
-  // Reset success/error messages after 3 seconds
+  // Reset success/error messages
   useEffect(() => {
     if (saveSuccess || saveError) {
       const timer = setTimeout(() => {
@@ -246,14 +245,14 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     }
   }, [saveSuccess, saveError]);
 
-  // Calculate position size and other values whenever inputs change
+  // Calculate position size
   useEffect(() => {
     if (entryPrice && stopLoss) {
       calculatePositionSize();
     }
   }, [entryPrice, stopLoss, riskAmount, takerFee, makerFee, direction, entryTaker, entryMaker, exitTaker, exitMaker, decimalPlaces, availableCapital, openTrades, includeUnrealizedProfits, showCompounding]);
 
-  // Auto-detect direction based on entry price and stop loss
+  // Auto-detect direction
   useEffect(() => {
     if (entryPrice && stopLoss) {
       const entry = parseFloat(entryPrice);
@@ -265,12 +264,11 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
         } else if (entry < stop) {
           setDirection('short');
         }
-        // If entry equals stop, we don't change the direction to avoid flip-flopping
       }
     }
   }, [entryPrice, stopLoss]);
 
-  // Check for overlapping stops when entry price or stop loss changes
+  // Check for overlapping stops
   useEffect(() => {
     if (entryPrice && stopLoss && openTrades.length > 0 && showCompounding) {
       const entry = parseFloat(entryPrice);
@@ -285,7 +283,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     }
   }, [entryPrice, stopLoss, openTrades, showCompounding]);
 
-  // Calculate combined risk profile when open trades change
+  // Calculate combined risk profile
   useEffect(() => {
     if (openTrades.length > 0 && availableCapital) {
       const capital = parseFloat(availableCapital);
@@ -298,12 +296,28 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     }
   }, [openTrades, availableCapital]);
 
-  // Copy to clipboard function
+  // Handle clicks outside trade details to close them
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (tradeDetailsRef.current && !tradeDetailsRef.current.contains(event.target as Node)) {
+        setSelectedTrade(null);
+      }
+    };
+
+    if (selectedTrade) {
+      document.addEventListener('click', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [selectedTrade]);
+
+  // Utility functions remain unchanged (copyToClipboard, handle fee changes, calculatePositionSize, etc.)
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
   };
 
-  // Handle fee type checkboxes
   const handleEntryTakerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const checked = e.target.checked;
     setEntryTaker(checked);
@@ -328,7 +342,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     if (checked) setExitTaker(false);
   };
 
-  // Calculate the position size based on inputs
   const calculatePositionSize = () => {
     if (!entryPrice || !stopLoss || !riskAmount || !availableCapital) {
       setPositionSizeBeforeFees('');
@@ -349,83 +362,57 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     const takerFeeRate = parseFloat(takerFee) / 100;
     const makerFeeRate = parseFloat(makerFee) / 100;
     
-    // Validate inputs
     if (isNaN(entry) || isNaN(stop) || isNaN(risk) || isNaN(capital) || 
         isNaN(takerFeeRate) || isNaN(makerFeeRate) || entry === stop) {
       return;
     }
     
-    // Determine entry and exit fee rates
     const entryFeeRate = entryTaker ? takerFeeRate : (entryMaker ? makerFeeRate : 0);
     const exitFeeRate = exitTaker ? takerFeeRate : (exitMaker ? makerFeeRate : 0);
     
-    // Automatically determine direction based on entry and stop loss
     const isLong = entry > stop;
     const tradeDirection = isLong ? 'long' : 'short';
     setDirection(tradeDirection as 'long' | 'short');
     
-    // Corrected position sizing logic
     const priceDifference = Math.abs(stop - entry);
-    // Size before fees calculation (for reference only)
     const sizeBeforeFees = risk / priceDifference;
     setPositionSizeBeforeFees(sizeBeforeFees.toFixed(decimalPlaces));
     
-    // Corrected position size calculation that accounts for fees properly
-    // For a position size s:
-    // s × (priceDifference) + s × entry × entryFeeRate + s × stop × exitFeeRate = risk
-    // Solve for s:
-    // s = risk / (priceDifference + entry × entryFeeRate + stop × exitFeeRate)
     const feeFactor = entry * entryFeeRate + stop * exitFeeRate;
     const effectiveDifference = priceDifference + feeFactor;
-    
-    // Calculate the correct position size that considers fees upfront
     const sizeAfterFees = risk / effectiveDifference;
     
-    // Calculate fees based on the correct position size
     const entryFee = sizeAfterFees * entry * entryFeeRate;
     const exitFee = sizeAfterFees * stop * exitFeeRate;
     const totalFeesAmount = entryFee + exitFee;
     
-    // Display negative size for short positions (for UI display only)
     const displaySize = tradeDirection === 'short' ? -sizeAfterFees : sizeAfterFees;
     setPositionSizeAfterFees(displaySize.toFixed(decimalPlaces));
     setTotalFees(totalFeesAmount.toFixed(2));
-    
-    // Max risk is always the input risk amount (we've calculated position size to ensure this)
     setMaxRisk(risk.toFixed(2));
     
-    // Calculate leverage needed (use absolute value for calculation)
     const positionValue = sizeAfterFees * entry;
     const leverageValue = positionValue / capital;
-    
-    // Sign the leverage for display
     const displayLeverage = tradeDirection === 'short' ? -leverageValue : leverageValue;
     setLeverageNeeded(displayLeverage.toFixed(2) + 'x');
     
-    // Calculate liquidation price
     let liquidationValue;
     if (isLong) {
-      // For long positions, liquidation is below entry
       liquidationValue = Math.max(0, entry * (1 - 1 / leverageValue));
     } else {
-      // For short positions, liquidation is above entry
-      // Note: For shorts, we use the absolute value of leverage for the calculation
       liquidationValue = entry * (1 + 1 / leverageValue);
     }
     setLiquidationPrice(liquidationValue.toFixed(2));
     
-    // Check if liquidation would happen before stop loss
     const isRisky = isLong ? 
-      liquidationValue > stop : // For long: liquidation is above stop loss (would hit first)
-      liquidationValue < stop;  // For short: liquidation is below stop loss (would hit first)
+      liquidationValue > stop : 
+      liquidationValue < stop;
     setIsLiquidationRisky(isRisky);
     
-    // Calculate risk percentage of capital
     const riskPercent = (risk / capital) * 100;
     setRiskPercentage(riskPercent);
   };
 
-  // Calculate compounding results
   const calculateCompounding = () => {
     const capital = parseFloat(initialCapital);
     const profit = parseFloat(profitPercentage);
@@ -439,13 +426,10 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     
     const result = calculateCompoundedProfits(capital, profit, trades, win, feeRate);
     setCompoundResult(result);
-    
-    // Generate table for visualization
     const table = generateCompoundGrowthTable(capital, profit, trades, win, feeRate);
     setCompoundTable(table);
   };
 
-  // Reset all form fields
   const resetForm = () => {
     setEntryPrice('');
     setStopLoss('');
@@ -472,7 +456,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     setIsLiquidationRisky(false);
   };
 
-  // Save trade to journal and execute on Bybit
   const saveToJournal = async () => {
     if (!user) {
       setSaveError('You must be logged in to save trades');
@@ -484,7 +467,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
       return;
     }
     
-    // Validation check for API key if not in test mode
     if (!testMode && !selectedApiKeyId && apiKeys.length > 0) {
       setSaveError('Please select an API key or enable test mode');
       return;
@@ -494,10 +476,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     setSaveError(null);
     
     try {
-      // Parse leverage from leverageNeeded by removing the 'x' suffix
       const leverageValue = parseFloat(leverageNeeded.replace('x', ''));
-      
-      // Prepare data for API call
       const tradeData = {
         user_id: user.id,
         api_key_id: testMode ? null : selectedApiKeyId,
@@ -516,7 +495,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
         test_mode: testMode
       };
       
-      // Call the edge function to execute the trade and save it
       const response = await fetch('/.netlify/functions/executeManualTrade', {
         method: 'POST',
         headers: {
@@ -531,8 +509,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
       }
       
       const result = await response.json();
-      
-      // Add to open trades list
       const newTrade: Trade = {
         tradeId: result.tradeId,
         symbol: selectedCrypto,
@@ -548,7 +524,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
         entryPicUrl: entryPicUrl || '',
         entryNotes: notes || '',
         midTradeNotes: '',
-        notes: '', // Exit notes - reset for the open trade display
+        notes: '',
         exitPicUrl: '',
         takeProfitPrice: takeProfitPrice ? parseFloat(takeProfitPrice) : 0,
         timestamp: Date.now(),
@@ -556,8 +532,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
       };
       
       setOpenTrades(prevTrades => [...prevTrades, newTrade]);
-      
-      // Initialize journal fields for the new trade
       setTradeEntryNotes(prev => ({ ...prev, [result.tradeId]: notes || '' }));
       setTradeMidNotes(prev => ({ ...prev, [result.tradeId]: '' }));
       setTradeExitNotes(prev => ({ ...prev, [result.tradeId]: '' }));
@@ -578,7 +552,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     }
   };
 
-  // Handle field changes for open trades
   const handleTradeEntryNotesChange = (tradeId: string, value: string) => {
     setTradeEntryNotes(prev => ({ ...prev, [tradeId]: value }));
   };
@@ -603,12 +576,11 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     setTradeTakeProfits(prev => ({ ...prev, [tradeId]: value }));
   };
 
-  // Handle trade selection
+  // Simplified trade selection (no toggling)
   const handleTradeSelect = (tradeId: string) => {
-    setSelectedTrade(tradeId === selectedTrade ? null : tradeId);
+    setSelectedTrade(tradeId);
   };
 
-  // Close a trade
   const closeTrade = async () => {
     if (!selectedTrade) return;
     
@@ -619,20 +591,15 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     setSaveError(null);
     
     try {
-      // Prepare close data with all journal fields
       const closeData = {
         notes: tradeExitNotes[selectedTrade] || '',
         exitPicUrl: tradeExitPics[selectedTrade] || '',
-        // Include entry notes and mid-trade notes
         entryNotes: tradeEntryNotes[selectedTrade] || '',
         midTradeNotes: tradeMidNotes[selectedTrade] || '',
-        // Include the updated take profit price
         takeProfit: tradeTakeProfits[selectedTrade] ? parseFloat(tradeTakeProfits[selectedTrade]) : undefined,
-        // If we have live price, use it as exit price, otherwise leave undefined
         exitPrice: livePrice ? parseFloat(livePrice) : undefined
       };
       
-      // Call the closeManualTrade edge function
       const response = await fetch(`/.netlify/functions/closeManualTrade/${selectedTrade}`, {
         method: 'POST',
         headers: {
@@ -646,7 +613,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
         throw new Error(errorData.error || 'Failed to close trade');
       }
       
-      // Remove from open trades
       setOpenTrades(prevTrades => 
         prevTrades.filter(trade => trade.tradeId !== selectedTrade)
       );
@@ -663,7 +629,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
   return (
     <div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Position Calculator and Compounding Calculator - Left Column */}
+        {/* Position Calculator and Compounding Calculator */}
         <div className="space-y-4">
           <div className="mb-2">
             <h3 className="text-sm font-medium text-gray-700">Position Calculator</h3>
@@ -716,7 +682,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
                   />
                 </div>
                 
-                {/* Take Profit moved here from JournalEntry */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Take Profit Price
@@ -860,7 +825,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
                 </div>
               </div>
               
-              {/* System Selection */}
               <div>
                 <SystemSelect 
                   value={systemName}
@@ -869,7 +833,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
                 />
               </div>
               
-              {/* API Key Selection for Trade Execution */}
               <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-sm font-medium text-gray-700">Bybit Integration</h3>
@@ -920,7 +883,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
                 )}
               </div>
               
-              {/* Entry Pic URL and Notes (moved from JournalEntry) */}
               <div className="space-y-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -967,7 +929,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
                 </div>
               </div>
               
-              {/* Action Buttons */}
               <div className="flex gap-2">
                 <button
                   onClick={() => calculatePositionSize()}
@@ -985,7 +946,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
               </div>
             </>
           ) : (
-            // Compounding Calculator
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -1051,7 +1011,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
                 </div>
               </div>
               
-              {/* Advanced Compounding Options */}
               <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
                 <h4 className="text-sm font-medium text-gray-700 mb-2">Advanced Position Options</h4>
                 
@@ -1066,7 +1025,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
                     <span className="ml-2 text-sm text-gray-700">Include unrealized profits in risk calculation</span>
                   </label>
                   
-                  {/* Entry Price and Stop Loss for Compound Position */}
                   <div className="grid grid-cols-2 gap-3 mt-2">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1095,7 +1053,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
                     </div>
                   </div>
                   
-                  {/* Risk Amount for this Position */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Risk Amount (USDT)
@@ -1152,7 +1109,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
             </div>
           )}
           
-          {/* Success/Error Messages */}
           {saveSuccess && (
             <div className="text-sm p-2 bg-green-50 border border-green-200 rounded-md text-green-700 flex items-center">
               <Check size={16} className="mr-1" />
@@ -1168,9 +1124,8 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
           )}
         </div>
         
-        {/* Middle column: Results */}
+        {/* Results */}
         <div className="space-y-4">
-          {/* Results Display */}
           {!showCompounding ? (
             <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
               <h4 className="text-sm font-medium text-gray-700 mb-3">Calculation Results</h4>
@@ -1255,7 +1210,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
               )}
             </div>
           ) : (
-            // Compounding Results
             compoundResult !== null && (
               <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Compounding Results</h4>
@@ -1354,7 +1308,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
           )}
         </div>
         
-        {/* Right Column: Open Trades List */}
+        {/* Open Trades List */}
         <div className="space-y-4">
           <h3 className="text-sm font-medium text-gray-700">Open Trades</h3>
           
@@ -1400,7 +1354,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
                         <span className="ml-1 text-gray-900">{trade.stopLoss}</span>
                       </div>
                       
-                      {/* Moved the TP here */}
                       <div>
                         <span className="text-gray-500">Size:</span>
                         <span className="ml-1 text-gray-900">{trade.positionSize.toFixed(decimalPlaces)}</span>
@@ -1412,12 +1365,13 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
                       </div>
                     </div>
                     
-                    {/* Trade Journal Section */}
                     {selectedTrade === trade.tradeId && (
-                      <div className="mt-3 pt-3 border-t border-gray-200 space-y-3">
+                      <div 
+                        ref={tradeDetailsRef}
+                        className="mt-3 pt-3 border-t border-gray-200 space-y-3"
+                      >
                         <h4 className="text-xs font-medium text-gray-700">Trade Journal</h4>
                         
-                        {/* Take Profit */}
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">
                             Take Profit Price
@@ -1431,7 +1385,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
                           />
                         </div>
                         
-                        {/* Entry Pic URL */}
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">
                             Entry Picture URL
@@ -1457,7 +1410,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
                           )}
                         </div>
                         
-                        {/* Exit Pic URL */}
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">
                             Exit Picture URL
@@ -1483,7 +1435,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
                           )}
                         </div>
                         
-                        {/* Entry Notes */}
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">
                             Entry Notes
@@ -1497,7 +1448,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
                           />
                         </div>
                         
-                        {/* Mid-Trade Notes */}
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">
                             Mid-Trade Notes
@@ -1511,7 +1461,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
                           />
                         </div>
                         
-                        {/* Exit Notes */}
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">
                             Exit Notes
@@ -1532,7 +1481,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
             )}
           </div>
           
-          {/* Close Trade Button */}
           <button
             onClick={closeTrade}
             disabled={!selectedTrade || saving}

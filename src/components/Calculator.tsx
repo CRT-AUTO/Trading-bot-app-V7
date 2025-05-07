@@ -616,6 +616,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
         exitPicUrl: tradeExitPics[selectedTrade] || '',
         entryNotes: tradeEntryNotes[selectedTrade] || '',
         midTradeNotes: tradeMidNotes[selectedTrade] || '',
+        entryPicUrl: tradeEntryPics[selectedTrade] || '', // Added entryPicUrl
         takeProfit: tradeTakeProfits[selectedTrade] ? parseFloat(tradeTakeProfits[selectedTrade]) : undefined,
         exitPrice: livePrice ? parseFloat(livePrice) : undefined
       };

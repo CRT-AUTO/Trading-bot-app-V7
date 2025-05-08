@@ -96,17 +96,11 @@ export function calculatePositionSize({
     finalQuantity = Math.floor(finalQuantity / qtyStep) * qtyStep;
     console.log(`Rounded quantity to step size (${qtyStep}): ${finalQuantity}`);
   }
-  
-  // Ensure we don't exceed max position size if specified
-  if (maxPositionSize > 0) {
-    const positionValueUSDT = finalQuantity * entryPrice;
-    if (positionValueUSDT > maxPositionSize) {
-      // Calculate maximum allowed quantity based on max position size
-      const maxAllowedQty = maxPositionSize / entryPrice;
-      // Round down to the nearest step size
-      finalQuantity = Math.floor(maxAllowedQty / qtyStep) * qtyStep;
-      console.log(`Reduced quantity to respect max position size (${maxPositionSize}): ${finalQuantity}`);
-    }
+
+  // Ensure we don't exceed max position size if specified (now in coin units)
+  if (maxPositionSize > 0 && finalQuantity > maxPositionSize) {
+    finalQuantity = Math.floor(maxPositionSize / qtyStep) * qtyStep;
+    console.log(`Reduced quantity to respect max position size (${maxPositionSize}): ${finalQuantity}`);
   }
   
   // Apply precision (number of decimal places)

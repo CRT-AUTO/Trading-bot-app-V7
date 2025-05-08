@@ -45,7 +45,7 @@ const Documentation: React.FC = () => {
     tradingViewStrategy: `// ALERT MESSAGE FOR JSON OUTPUT
 //────────────────────────────-------------
 // For Long Trades:
-if strategy.position_size > 0 and strategy.position_size[1] <= 0 and not na(lockedLongTP) and not na(longStopFixed)
+if longCondition and strategy.position_size == 0
     jsonMsg = "{" +
               "\"symbol\": \"" + syminfo.ticker + "\", " +
               "\"side\": \"Buy\", " +
@@ -61,6 +61,7 @@ if strategy.position_size > 0 and strategy.position_size[1] <= 0 and not na(lock
               "}"
     alert(jsonMsg, alert.freq_once_per_bar)
 
+// Long Close Alert
 if strategy.position_size == 0 and strategy.position_size[1] > 0
     jsonMsg = "{" +
               "\"symbol\": \"" + syminfo.ticker + "\", " +
@@ -75,7 +76,7 @@ if strategy.position_size == 0 and strategy.position_size[1] > 0
     alert(jsonMsg, alert.freq_once_per_bar)
 
 // For Short Trades:
-if strategy.position_size < 0 and strategy.position_size[1] >= 0 and not na(lockedShortTP) and not na(shortStopFixed)
+if strategy.position_size == 0 and strategy.position_size[1] < 0
     jsonMsg = "{" +
               "\"symbol\": \"" + syminfo.ticker + "\", " +
               "\"side\": \"Sell\", " +
@@ -91,6 +92,7 @@ if strategy.position_size < 0 and strategy.position_size[1] >= 0 and not na(lock
               "}"
     alert(jsonMsg, alert.freq_once_per_bar)
 
+// Short Close Alert
 if strategy.position_size == 0 and strategy.position_size[1] < 0
     jsonMsg = "{" +
               "\"symbol\": \"" + syminfo.ticker + "\", " +

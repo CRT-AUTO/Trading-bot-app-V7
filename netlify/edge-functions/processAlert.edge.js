@@ -655,7 +655,7 @@ async function processCloseTrade(supabase, bot, webhook, alertData, apiKey, requ
   let realizedPnl = alertData.realized_pnl || null;
   
   // Enhanced close reason detection
-  let closeReason = alertData.close_reason || 'signal'; // Default to 'signal' if not provided
+  let closeReason = alertData.close_reason || 'none'; // Default to 'none' if not provided
   
   if (alertData.close_reason) {
     closeReason = alertData.close_reason; // Use provided reason if available

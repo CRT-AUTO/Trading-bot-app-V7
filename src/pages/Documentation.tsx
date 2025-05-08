@@ -42,8 +42,7 @@ const Documentation: React.FC = () => {
   "stopLoss": 49000,
   "state": "open"
 }`,
-    tradingViewStrategy: `//─────────────────────────────
-// ALERT MESSAGE FOR JSON OUTPUT
+    tradingViewStrategy: `// ALERT MESSAGE FOR JSON OUTPUT
 //────────────────────────────-------------
 // For Long Trades:
 if strategy.position_size > 0 and strategy.position_size[1] <= 0 and not na(lockedLongTP) and not na(longStopFixed)
@@ -57,8 +56,8 @@ if strategy.position_size > 0 and strategy.position_size[1] <= 0 and not na(lock
               "\"takeProfit\": " + str.tostring(lockedLongTP, format.mintick) + ", " +
               "\"state\": \"open\", " +
               "\"closeReason\": \"none\", " +
-              "\"bot_name\": \"-----\", " +
-              "\"webhook_url\": \"-----\"" +
+              "\"bot_name\": \"SUPER6H\", " +
+              "\"webhook_url\": \"https://profound-tartufo-06a228.netlify.app/.netlify/functions/processAlert/y0si61117qc231panyyh8\"" +
               "}"
     alert(jsonMsg, alert.freq_once_per_bar)
 
@@ -70,8 +69,8 @@ if strategy.position_size == 0 and strategy.position_size[1] > 0
               "\"price\": \"" + str.tostring(close, format.mintick) + "\", " +
               "\"state\": \"close\", " +
               "\"closeReason\": \"none\", " +
-              "\"bot_name\": \"-----\", " +
-              "\"webhook_url\": \"-----\"" +
+              "\"bot_name\": \"SUPER6H\", " +
+              "\"webhook_url\": \"https://profound-tartufo-06a228.netlify.app/.netlify/functions/processAlert/y0si61117qc231panyyh8\"" +
               "}"
     alert(jsonMsg, alert.freq_once_per_bar)
 
@@ -87,8 +86,8 @@ if strategy.position_size < 0 and strategy.position_size[1] >= 0 and not na(lock
               "\"takeProfit\": " + str.tostring(lockedShortTP, format.mintick) + ", " +
               "\"state\": \"open\", " +
               "\"closeReason\": \"none\", " +
-              "\"bot_name\": \"-----\", " +
-              "\"webhook_url\": \"-----\"" +
+              "\"bot_name\": \"SUPER6H\", " +
+              "\"webhook_url\": \"https://profound-tartufo-06a228.netlify.app/.netlify/functions/processAlert/y0si61117qc231panyyh8\"" +
               "}"
     alert(jsonMsg, alert.freq_once_per_bar)
 
@@ -100,8 +99,8 @@ if strategy.position_size == 0 and strategy.position_size[1] < 0
               "\"price\": \"" + str.tostring(close, format.mintick) + "\", " +
               "\"state\": \"close\", " +
               "\"closeReason\": \"none\", " +
-              "\"bot_name\": \"-----\", " +
-              "\"webhook_url\": \"-----\"" +
+              "\"bot_name\": \"SUPER6H\", " +
+              "\"webhook_url\": \"https://profound-tartufo-06a228.netlify.app/.netlify/functions/processAlert/y0si61117qc231panyyh8\"" +
               "}"
     alert(jsonMsg, alert.freq_once_per_bar)`
   };

@@ -17,6 +17,9 @@ type ManualTrade = {
   r_multiple: number | null;
   system_id: string | null;
   notes: string | null;
+  entry_notes: string | null;
+  mid_notes: string | null;
+  exit_notes: string | null;
   pic_entry: string | null;
   pic_exit: string | null;
   win_loss: string | null;
@@ -45,6 +48,8 @@ const ManualTradeHistory: React.FC = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [updatedNotes, setUpdatedNotes] = useState('');
+  const [updatedEntryNotes, setUpdatedEntryNotes] = useState(''); 
+  const [updatedMidNotes, setUpdatedMidNotes] = useState('');
   const [updatedEntryPicUrl, setUpdatedEntryPicUrl] = useState('');
   const [updatedExitPicUrl, setUpdatedExitPicUrl] = useState('');
   const [updatedTakeProfit, setUpdatedTakeProfit] = useState<string>('');
@@ -112,7 +117,7 @@ const ManualTradeHistory: React.FC = () => {
     
     const headers = [
       'Date', 'Symbol', 'Side', 'Entry Price', 'Close Price', 'Quantity', 
-      'Stop Loss', 'Take Profit', 'P/L', 'R Multiple', 'System', 'Notes',
+      'Stop Loss', 'Take Profit', 'P/L', 'R Multiple', 'System', 'Entry Notes', 'Mid Notes', 'Exit Notes',
       'Status', 'Max Risk', 'Leverage'
     ];
     
@@ -130,7 +135,9 @@ const ManualTradeHistory: React.FC = () => {
         trade.pnl || 0,
         trade.finish_r || '',
         `"${trade.system_id || ''}"`,
-        `"${trade.notes?.replace(/"/g, '""') || ''}"`,
+        `"${trade.entry_notes?.replace(/"/g, '""') || ''}"`,
+        `"${trade.mid_notes?.replace(/"/g, '""') || ''}"`,
+        `"${trade.exit_notes?.replace(/"/g, '""') || ''}"`,
         trade.status,
         trade.max_risk || '',
         trade.leverage || ''
@@ -149,7 +156,9 @@ const ManualTradeHistory: React.FC = () => {
   // Show trade details in modal
   const viewTradeDetails = (trade: ManualTrade) => {
     setSelectedTrade(trade);
-    setUpdatedNotes(trade.notes || '');
+    setUpdatedNotes(trade.exit_notes || trade.notes || '');
+    setUpdatedEntryNotes(trade.entry_notes || '');
+    setUpdatedMidNotes(trade.mid_notes || '');
     setUpdatedEntryPicUrl(trade.pic_entry || '');
     setUpdatedExitPicUrl(trade.pic_exit || '');
     setUpdatedTakeProfit(trade.take_profit ? trade.take_profit.toString() : '');
@@ -186,7 +195,10 @@ const ManualTradeHistory: React.FC = () => {
       const { error } = await supabase
         .from('manual_trades')
         .update({
-          notes: updatedNotes,
+          notes: updatedNotes, // Keep for backward compatibility
+          exit_notes: updatedNotes,
+          entry_notes: updatedEntryNotes,
+          mid_notes: updatedMidNotes,
           pic_entry: updatedEntryPicUrl,
           pic_exit: updatedExitPicUrl,
           take_profit: updatedTakeProfit ? parseFloat(updatedTakeProfit) : null,
@@ -203,6 +215,9 @@ const ManualTradeHistory: React.FC = () => {
           ? { 
               ...trade, 
               notes: updatedNotes, 
+              exit_notes: updatedNotes,
+              entry_notes: updatedEntryNotes,
+              mid_notes: updatedMidNotes,
               pic_entry: updatedEntryPicUrl, 
               pic_exit: updatedExitPicUrl,
               take_profit: updatedTakeProfit ? parseFloat(updatedTakeProfit) : null
@@ -217,6 +232,9 @@ const ManualTradeHistory: React.FC = () => {
       setSelectedTrade({
         ...selectedTrade,
         notes: updatedNotes,
+        exit_notes: updatedNotes,
+        entry_notes: updatedEntryNotes,
+        mid_notes: updatedMidNotes,
         pic_entry: updatedEntryPicUrl,
         pic_exit: updatedExitPicUrl,
         take_profit: updatedTakeProfit ? parseFloat(updatedTakeProfit) : null
@@ -242,7 +260,10 @@ const ManualTradeHistory: React.FC = () => {
         },
         body: JSON.stringify({ 
           exitPicUrl: trade.pic_exit,
-          notes: trade.notes
+          notes: trade.exit_notes || trade.notes,
+          entryNotes: trade.entry_notes,
+          midTradeNotes: trade.mid_notes,
+          entryPicUrl: trade.pic_entry
         }),
       });
       
@@ -766,21 +787,65 @@ const ManualTradeHistory: React.FC = () => {
                 
                 {editMode ? (
                   <div className="col-span-2">
-                    <p className="text-sm text-gray-500">Notes</p>
+                    <p className="text-sm text-gray-500">Entry Notes</p>
+                    <textarea
+                      value={updatedEntryNotes}
+                      onChange={(e) => setUpdatedEntryNotes(e.target.value)}
+                      rows={3}
+                      className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
+                      placeholder="Add entry notes about this trade..."
+                    />
+                  </div>
+                ) : (
+                  selectedTrade.entry_notes && (
+                    <div className="col-span-2">
+                      <p className="text-sm text-gray-500">Entry Notes</p>
+                      <p className="p-2 bg-gray-50 rounded-md border border-gray-200 mt-1">
+                        {selectedTrade.entry_notes}
+                      </p>
+                    </div>
+                  )
+                )}
+                
+                {editMode ? (
+                  <div className="col-span-2">
+                    <p className="text-sm text-gray-500">Mid-Trade Notes</p>
+                    <textarea
+                      value={updatedMidNotes}
+                      onChange={(e) => setUpdatedMidNotes(e.target.value)}
+                      rows={3}
+                      className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
+                      placeholder="Add mid-trade notes..."
+                    />
+                  </div>
+                ) : (
+                  selectedTrade.mid_notes && (
+                    <div className="col-span-2">
+                      <p className="text-sm text-gray-500">Mid-Trade Notes</p>
+                      <p className="p-2 bg-gray-50 rounded-md border border-gray-200 mt-1">
+                        {selectedTrade.mid_notes}
+                      </p>
+                    </div>
+                  )
+                )}
+                
+                {editMode ? (
+                  <div className="col-span-2">
+                    <p className="text-sm text-gray-500">Exit Notes</p>
                     <textarea
                       value={updatedNotes}
                       onChange={(e) => setUpdatedNotes(e.target.value)}
                       rows={3}
                       className="mt-1 w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
-                      placeholder="Add notes about this trade..."
+                      placeholder="Add exit notes about this trade..."
                     />
                   </div>
                 ) : (
-                  selectedTrade.notes && (
+                  (selectedTrade.exit_notes || selectedTrade.notes) && (
                     <div className="col-span-2">
-                      <p className="text-sm text-gray-500">Notes</p>
+                      <p className="text-sm text-gray-500">Exit Notes</p>
                       <p className="p-2 bg-gray-50 rounded-md border border-gray-200 mt-1">
-                        {selectedTrade.notes}
+                        {selectedTrade.exit_notes || selectedTrade.notes}
                       </p>
                     </div>
                   )

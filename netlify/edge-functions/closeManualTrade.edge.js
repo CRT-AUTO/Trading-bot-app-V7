@@ -1,6 +1,7 @@
 // Netlify Edge Function for updating manual trades with Bybit API data
 import { createClient } from '@supabase/supabase-js';
 import { MAINNET_URL, TESTNET_URL } from './utils/bybit.edge.mjs';
+import { calculateTradeMetrics } from './utils/tradeMetrics.edge.mjs';
 
 // CORS headers to include in all responses
 const corsHeaders = {
@@ -13,7 +14,7 @@ const corsHeaders = {
 const MAX_RETRIES = 3;
 
 // Helper function to log events to the database
-async function logEvent(supabase, level, message, details, tradeId = null, userId = null) {
+async function logEvent(supabase, level, message, details, userId = null, tradeId = null) {
   try {
     const { error } = await supabase
       .from('logs')
@@ -21,8 +22,8 @@ async function logEvent(supabase, level, message, details, tradeId = null, userI
         level,
         message,
         details,
-        trade_id: tradeId,
         user_id: userId,
+        trade_id: tradeId,
         created_at: new Date().toISOString()
       });
       
@@ -222,9 +223,25 @@ export default async function handler(request, context) {
     
     // Parse request body for additional data
     const body = await request.json();
-    const { notes, exitPicUrl } = body || {};
+    const { 
+      notes, 
+      exitPicUrl, 
+      entryNotes, 
+      midTradeNotes, 
+      entryPicUrl,
+      takeProfit,
+      exitPrice
+    } = body || {};
     
-    console.log("Close trade request data:", { notes, exitPicUrl });
+    console.log("Close trade request data:", { 
+      notes, 
+      exitPicUrl, 
+      entryNotes, 
+      midTradeNotes, 
+      entryPicUrl,
+      takeProfit,
+      exitPrice
+    });
     
     // Get the trade to verify it exists and is open
     const { data: trade, error: tradeError } = await supabase
@@ -256,6 +273,21 @@ export default async function handler(request, context) {
     }
     
     console.log(`Found trade: ${trade.symbol}, order_id: ${trade.order_id || 'N/A'}, status: ${trade.status}`);
+    
+    await logEvent(
+      supabase,
+      'info',
+      'Processing manual trade close request',
+      { 
+        trade_id: tradeId, 
+        symbol: trade.symbol,
+        side: trade.side,
+        entry_price: trade.entry_price,
+        quantity: trade.quantity 
+      },
+      trade.user_id,
+      tradeId
+    );
     
     if (trade.status === 'closed') {
       console.log("Trade is already closed");
@@ -353,6 +385,20 @@ export default async function handler(request, context) {
     // Implement retry logic with exponential backoff
     let attempts = 0;
     let bybitApiData = null;
+    
+    await logEvent(
+      supabase,
+      'info',
+      'Fetching PnL data from Bybit API',
+      { 
+        trade_id: tradeId,
+        symbol: trade.symbol,
+        api_key_name: apiKey.name,
+        account_type: apiKey.account_type
+      },
+      trade.user_id,
+      tradeId
+    );
     
     while (attempts < MAX_RETRIES) {
       try {
@@ -470,6 +516,19 @@ export default async function handler(request, context) {
       } catch (error) {
         attempts++;
         console.error(`API call attempt ${attempts} failed:`, error);
+        
+        await logEvent(
+          supabase,
+          'warning',
+          `API call attempt ${attempts} failed`,
+          { 
+            error: error.message,
+            trade_id: tradeId,
+            attempt: attempts
+          },
+          trade.user_id,
+          tradeId
+        );
         
         if (attempts >= MAX_RETRIES) {
           await logEvent(
@@ -596,6 +655,65 @@ export default async function handler(request, context) {
     // Determine win/loss
     const winLoss = realizedPnl > 0 ? 'win' : (realizedPnl < 0 ? 'loss' : 'breakeven');
     
+    // Calculate trade metrics
+    let tradeMetrics = null;
+    try {
+      // Get necessary data for trade metrics calculation
+      const plannedEntry = trade.entry_price || 0;
+      const actualEntry = avgEntryPrice || trade.entry_price || 0;
+      const exitPriceValue = avgExitPrice || exitPrice || 0;
+      const takeProfit = trade.take_profit || 0;
+      const stopLoss = trade.stop_loss || 0;
+      const maxRisk = trade.max_risk || 10; // Default to 10 if not set
+      
+      const openTime = new Date(trade.entry_date).getTime();
+      const closeTime = Date.now();
+      
+      // Calculate trade metrics
+      tradeMetrics = calculateTradeMetrics({
+        symbol: trade.symbol,
+        side: trade.side,
+        plannedEntry,
+        actualEntry,
+        takeProfit,
+        stopLoss,
+        maxRisk,
+        finishedDollar: realizedPnl,
+        openFee: 0, // We don't have this information for manual trades
+        closeFee: fees,
+        openTime,
+        closeTime,
+      });
+      
+      console.log('Trade metrics calculated:', tradeMetrics);
+      
+      await logEvent(
+        supabase,
+        'info',
+        'Trade metrics calculated successfully',
+        { 
+          trade_id: tradeId,
+          metrics: tradeMetrics
+        },
+        trade.user_id,
+        tradeId
+      );
+    } catch (error) {
+      console.error('Error calculating trade metrics:', error);
+      
+      await logEvent(
+        supabase,
+        'error',
+        'Failed to calculate trade metrics',
+        { 
+          error: error.message,
+          trade_id: tradeId
+        },
+        trade.user_id,
+        tradeId
+      );
+    }
+    
     // Update the trade with PnL data
     const updateData = {
       status: 'closed',
@@ -617,6 +735,7 @@ export default async function handler(request, context) {
       mid_notes: midTradeNotes || trade.mid_notes,
       pic_entry: entryPicUrl || trade.pic_entry,
       take_profit: takeProfit || trade.take_profit,
+      trade_metrics: tradeMetrics,
       updated_at: new Date().toISOString()
     };
     

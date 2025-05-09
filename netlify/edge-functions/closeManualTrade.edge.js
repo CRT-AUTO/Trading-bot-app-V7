@@ -382,10 +382,6 @@ export default async function handler(request, context) {
     const baseUrl = MAINNET_URL; // We use mainnet for manual trades
     let endpoint = '/v5/position/closed-pnl';
     
-    // Implement retry logic with exponential backoff
-    let attempts = 0;
-    let bybitApiData = null;
-    
     await logEvent(
       supabase,
       'info',
@@ -399,6 +395,10 @@ export default async function handler(request, context) {
       trade.user_id,
       tradeId
     );
+    
+    // Implement retry logic with exponential backoff
+    let attempts = 0;
+    let bybitApiData = null;
     
     while (attempts < MAX_RETRIES) {
       try {
@@ -583,9 +583,10 @@ export default async function handler(request, context) {
         close_time: new Date().toISOString(),
         trade_close_exe_time: new Date().toISOString(),
         notes: notes || trade.notes,
-        pic_exit: exitPicUrl || trade.pic_exit,
+        exit_notes: notes || trade.exit_notes,
         entry_notes: entryNotes || trade.entry_notes,
         mid_notes: midTradeNotes || trade.mid_notes,
+        pic_exit: exitPicUrl || trade.pic_exit,
         pic_entry: entryPicUrl || trade.pic_entry,
         take_profit: takeProfit || trade.take_profit,
         close_price: exitPrice || trade.close_price,
@@ -729,10 +730,10 @@ export default async function handler(request, context) {
       trade_fee: totalFees,
       total_trade_time: totalTradeTime,
       total_trade_time_seconds: totalTradeTimeSeconds,
-      notes: notes || trade.notes,
-      pic_exit: exitPicUrl || trade.pic_exit,
+      exit_notes: notes || trade.exit_notes,
       entry_notes: entryNotes || trade.entry_notes,
       mid_notes: midTradeNotes || trade.mid_notes,
+      pic_exit: exitPicUrl || trade.pic_exit,
       pic_entry: entryPicUrl || trade.pic_entry,
       take_profit: takeProfit || trade.take_profit,
       trade_metrics: tradeMetrics,

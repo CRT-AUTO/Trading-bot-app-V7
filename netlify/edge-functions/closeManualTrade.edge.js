@@ -815,7 +815,6 @@ export default async function handler(request, context) {
         supabase,
         'error',
         'Critical error updating manual trade',
-        { level: 'error', error: error.message }
         { error: error.message }
       );
     } catch (logError) {

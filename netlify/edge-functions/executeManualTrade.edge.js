@@ -303,7 +303,6 @@ export default async function handler(request, context) {
           'info',
           'Manual trade executed successfully',
           { 
-            level: 'info',
             order: {
               ...orderResult,
               symbol: formattedSymbol,
@@ -418,7 +417,6 @@ export default async function handler(request, context) {
       'info',
       'Manual trade saved successfully',
       { 
-        level: 'info',
         trade_id: insertedTrade.id,
         symbol,
         side,

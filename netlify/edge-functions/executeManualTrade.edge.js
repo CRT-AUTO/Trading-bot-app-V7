@@ -87,7 +87,6 @@ function adjustQuantity(quantity, minQty, qtyStep, decimals) {
 
 export default async function handler(request, context) {
   console.log("Edge Function: executeManualTrade started");
-  const requestData = await request.json();
   console.log("Received request data:", requestData);
   
   // Handle preflight requests

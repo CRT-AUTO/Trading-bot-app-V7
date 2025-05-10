@@ -40,7 +40,7 @@ export const saveTradeToJournal = async (trade: Trade): Promise<{ success: boole
       pic_entry: trade.entryPicUrl || null,
       order_type: 'Market',
       user_id: null, // Will be filled by the edge function
-      api_key_id: trade.api_key_id || null, // Add api_key_id
+      api_key_id: trade.api_key_id || null // Add api_key_id
     };
 
     // Call the edge function to save the trade

@@ -364,6 +364,7 @@ export default async function handler(request, context) {
       system_id,
       notes,
       pic_entry,
+      api_key_id,
       order_type,
       status: 'open',
       entry_date: new Date().toISOString(),

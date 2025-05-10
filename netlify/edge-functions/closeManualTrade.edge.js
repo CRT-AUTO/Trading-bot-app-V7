@@ -149,7 +149,6 @@ function calculateRMultiple(pnl, maxRisk) {
 
 export default async function handler(request, context) {
   console.log("Edge Function: closeManualTrade started");
-  const requestData = await request.json();
   console.log("Received request data:", requestData);
   
   // Handle preflight requests

@@ -21,7 +21,7 @@ async function logEvent(supabase, level, message, details, userId = null, tradeI
       .insert({
         level,
         message,
-        details: details,
+        details,
         user_id: userId,
         trade_id: tradeId,
         created_at: new Date().toISOString()
@@ -409,7 +409,7 @@ export default async function handler(request, context) {
         // Calculate the time range for fallback matching
         // Use a wider time window to increase chances of finding the trade
         const tradeTime = new Date(trade.entry_date).getTime();
-        const startTime = tradeTime - (1 * 3600 * 1000); // 24 hours before
+        const startTime = tradeTime - (24 * 3600 * 1000); // 24 hours before
         const endTime = Date.now(); // Current time
         
         console.log(`Time range for PnL search: 
@@ -567,7 +567,6 @@ export default async function handler(request, context) {
         'warning',
         'No matching closed PnL found in Bybit API response',
         { 
-          level: 'warning',
           order_id: trade.order_id,
           symbol: trade.symbol,
           side: trade.side,
@@ -773,7 +772,6 @@ export default async function handler(request, context) {
       'info',
       'Successfully updated manual trade with PnL data from Bybit API',
       { 
-        level: 'info',
         trade_id: tradeId,
         realized_pnl: realizedPnl,
         avg_entry_price: avgEntryPrice,

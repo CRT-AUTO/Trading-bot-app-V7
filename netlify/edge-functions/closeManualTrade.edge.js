@@ -149,6 +149,8 @@ function calculateRMultiple(pnl, maxRisk) {
 
 export default async function handler(request, context) {
   console.log("Edge Function: closeManualTrade started");
+  const requestData = await request.json();
+  console.log("Received request data:", requestData);
   
   // Handle preflight requests
   if (request.method === "OPTIONS") {
@@ -353,7 +355,7 @@ export default async function handler(request, context) {
           supabase,
           'error',
           'API credentials not found for updating manual trade',
-          { error: apiKeyError?.message },
+          { error: apiKeyError?.message, api_key_id: trade.api_key_id },
           trade.user_id,
           tradeId
         );
@@ -778,7 +780,8 @@ export default async function handler(request, context) {
         avg_exit_price: avgExitPrice,
         match_type: matchType,
         win_loss: winLoss,
-        finish_r: finishR
+        finish_r: finishR,
+        api_key_id: trade.api_key_id
       },
       trade.user_id,
       tradeId

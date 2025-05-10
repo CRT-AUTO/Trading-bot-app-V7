@@ -319,7 +319,6 @@ export default async function handler(request, context) {
           supabase,
           'error',
           'Failed to execute manual trade on Bybit',
-          { level: 'error'},
           { error: orderError.message },
           user_id
         );

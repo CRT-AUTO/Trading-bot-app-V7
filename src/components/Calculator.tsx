@@ -904,51 +904,9 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
                 )}
               </div>
               
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Entry Picture URL
-                  </label>
-                  <input
-                    type="text"
-                    value={entryPicUrl}
-                    onChange={(e) => setEntryPicUrl(e.target.value)}
-                    disabled={!positionSizeAfterFees}
-                    className={`w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                      !positionSizeAfterFees ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                    placeholder="https://example.com/chart-screenshot.png"
-                  />
-                  {entryPicUrl && (
-                    <div className="mt-2 p-2 border border-gray-200 rounded-md">
-                      <img 
-                        src={entryPicUrl} 
-                        alt="Entry chart" 
-                        className="max-h-36 object-contain mx-auto"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://placehold.co/400x300?text=Invalid+Image+URL';
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Entry Notes
-                  </label>
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    disabled={!positionSizeAfterFees}
-                    rows={3}
-                    className={`w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none ${
-                      !positionSizeAfterFees ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                    placeholder="Add your entry notes here..."
-                  />
-                </div>
-              </div>
+
+
+              
               
               <div className="flex gap-2">
                 <button

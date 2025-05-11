@@ -147,6 +147,18 @@ function calculateRMultiple(pnl, maxRisk) {
   return pnl / maxRisk;
 }
 
+// Calculate deviation from max risk (only for losses)
+function calculateDeviationFromMaxRisk(pnl, maxRisk) {
+  if (pnl >= 0 || !maxRisk || maxRisk === 0) return 0;
+  
+  // For losses, calculate what percentage the actual loss exceeds the max risk
+  const actualLoss = Math.abs(pnl);
+  const deviation = ((actualLoss - maxRisk) / maxRisk) * 100;
+  
+  // Only return positive values, as negative means we lost less than max risk
+  return Math.max(0, deviation);
+}
+
 export default async function handler(request, context) {
   console.log("Edge Function: closeManualTrade started");
   
@@ -628,13 +640,18 @@ export default async function handler(request, context) {
     const avgExitPrice = parseFloat(matchingPnl.avgExitPrice);
     const cumEntryValue = parseFloat(matchingPnl.cumEntryValue || 0);
     const cumExitValue = parseFloat(matchingPnl.cumExitValue || 0);
+    const leverageUsed = parseFloat(matchingPnl.leverage || trade.leverage || 1);
     
     // Calculate additional metrics
-    const fees = cumExitValue * 0.0006; // Approximate fee calculation (0.06%)
-    const totalFees = fees;
+    const entryFee = cumEntryValue * 0.00075; // Approximate entry fee calculation (0.075% for market orders)
+    const exitFee = cumExitValue * 0.00075; // Approximate exit fee calculation (0.075% for market orders)
+    const totalFees = entryFee + exitFee;
     
     // Calculate R-multiple if max_risk is available
     const finishR = calculateRMultiple(realizedPnl, trade.max_risk);
+    
+    // Calculate deviation from max risk (only for losing trades)
+    const deviationPercent = calculateDeviationFromMaxRisk(realizedPnl, trade.max_risk);
     
     // Calculate trade duration
     let totalTradeTimeSeconds = null;
@@ -680,8 +697,8 @@ export default async function handler(request, context) {
         stopLoss,
         maxRisk,
         finishedDollar: realizedPnl,
-        openFee: 0, // We don't have this information for manual trades
-        closeFee: fees,
+        openFee: entryFee, // Use the calculated entry fee
+        closeFee: exitFee, // Use the calculated exit fee
         openTime,
         closeTime,
       });
@@ -715,6 +732,13 @@ export default async function handler(request, context) {
       );
     }
     
+    // Check if we can extract the close order ID
+    let closeOrderId = null;
+    let closeOrderType = 'Market'; // Default to Market
+    if (matchingPnl.orderId && matchingPnl.orderId !== trade.order_id) {
+      closeOrderId = matchingPnl.orderId;
+    }
+    
     // Update the trade with PnL data
     const updateData = {
       status: 'closed',
@@ -726,7 +750,9 @@ export default async function handler(request, context) {
       finish_r: finishR,
       finish_usd: realizedPnl,
       win_loss: winLoss,
-      close_fee: fees,
+      leverage: leverageUsed, // Update with actual leverage from API if available
+      open_fee: entryFee,
+      close_fee: exitFee,
       trade_fee: totalFees,
       total_trade_time: totalTradeTime,
       total_trade_time_seconds: totalTradeTimeSeconds,
@@ -737,6 +763,9 @@ export default async function handler(request, context) {
       pic_entry: entryPicUrl || trade.pic_entry,
       take_profit: takeProfit || trade.take_profit,
       trade_metrics: tradeMetrics,
+      deviation: deviationPercent,
+      close_order_id: closeOrderId, 
+      close_order_type: closeOrderType,
       updated_at: new Date().toISOString()
     };
     

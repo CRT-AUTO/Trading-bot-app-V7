@@ -438,7 +438,7 @@ export default async function handler(request, context) {
         const params = new URLSearchParams({
           category: 'linear',
           symbol: formattedSymbol,
-          limit: '100',  // Increased limit to find more potential matches
+          limit: '50',  // Increased limit to find more potential matches
           startTime: startTime.toString(),
           endTime: endTime.toString(),
           timestamp,

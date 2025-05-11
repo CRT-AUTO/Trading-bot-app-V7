@@ -85,6 +85,26 @@ function adjustQuantity(quantity, minQty, qtyStep, decimals) {
   return finalQty;
 }
 
+// Helper function to calculate liquidation price
+function calculateLiquidationPrice(side, entryPrice, leverage, marginType = 'isolated') {
+  if (marginType !== 'isolated' || !leverage || leverage <= 0) {
+    return null;
+  }
+  
+  // For isolated margin:
+  // For long positions: Liquidation Price = Entry Price * (1 - Initial Margin Percentage)
+  // For short positions: Liquidation Price = Entry Price * (1 + Initial Margin Percentage)
+  // Where Initial Margin Percentage = 1 / Leverage
+  
+  const initialMarginPercentage = 1 / leverage;
+  
+  if (side === 'Buy') {
+    return entryPrice * (1 - initialMarginPercentage);
+  } else {
+    return entryPrice * (1 + initialMarginPercentage);
+  }
+}
+
 export default async function handler(request, context) {
   console.log("Edge Function: executeManualTrade started");
   
@@ -236,6 +256,15 @@ export default async function handler(request, context) {
     }
 
     let orderResult = null;
+    // Store trade execution data
+    let executionData = {
+      open_fee: null,
+      trade_open_ex_time: new Date().toISOString(),
+      liquidation_price: null,
+      cost: null,
+      value: null,
+      slippage_percentage: null,
+    };
     
     // Execute the order on Bybit if not in test mode
     if (!test_mode) {
@@ -273,6 +302,14 @@ export default async function handler(request, context) {
         
         console.log(`Original quantity: ${quantity}, Adjusted quantity: ${adjustedQuantity}`);
         
+        // Calculate liquidation price
+        const leverageValue = parseFloat(leverage || '1');
+        const liquidationPrice = calculateLiquidationPrice(
+          side, 
+          parseFloat(entry_price), 
+          leverageValue
+        );
+        
         // Prepare order parameters with adjusted quantity
         const orderParams = {
           apiKey: apiKey.api_key,
@@ -284,6 +321,7 @@ export default async function handler(request, context) {
           price: entry_price,
           stopLoss: stop_loss, // Include stop loss
           takeProfit: take_profit, // Include take profit
+          leverage: leverageValue, // Add leverage
           testnet: false  // Using real trading for manual trades
         };
         
@@ -294,9 +332,47 @@ export default async function handler(request, context) {
         });
         
         // Execute the order
+        const currentTime = new Date().toISOString();
         orderResult = await executeBybitOrder(orderParams);
         
         console.log("Order executed successfully:", orderResult);
+        
+        // Calculate slippage
+        const plannedEntryPrice = parseFloat(entry_price);
+        const actualEntryPrice = parseFloat(orderResult.price) || plannedEntryPrice;
+        let slippagePercentage = 0;
+        
+        if (plannedEntryPrice > 0 && actualEntryPrice > 0) {
+          // For buy orders: (actual - planned) / planned
+          // For sell orders: (planned - actual) / planned
+          const priceDiff = side === 'Buy' 
+            ? actualEntryPrice - plannedEntryPrice 
+            : plannedEntryPrice - actualEntryPrice;
+            
+          slippagePercentage = (priceDiff / plannedEntryPrice) * 100;
+        }
+        
+        // Calculate order cost and value
+        const orderQty = parseFloat(orderResult.qty || adjustedQuantity);
+        const orderPrice = parseFloat(orderResult.price || entry_price);
+        
+        // For buy orders, cost = price * quantity
+        // For sell orders, value = price * quantity
+        const cost = orderQty * orderPrice;
+        
+        // Estimate fees (typically 0.075% for taker orders)
+        const feeRate = order_type === 'Market' ? 0.00075 : 0.00025; // 0.075% for market, 0.025% for limit
+        const openFee = cost * feeRate;
+        
+        // Update execution data
+        executionData = {
+          open_fee: openFee,
+          trade_open_ex_time: currentTime,
+          liquidation_price: liquidationPrice,
+          cost: cost,
+          value: cost, // Initially, value = cost
+          slippage_percentage: slippagePercentage,
+        };
         
         await logEvent(
           supabase,
@@ -307,7 +383,8 @@ export default async function handler(request, context) {
               ...orderResult,
               symbol: formattedSymbol,
               side
-            }
+            },
+            execution_data: executionData
           },
           user_id
         );
@@ -347,6 +424,24 @@ export default async function handler(request, context) {
         status: 'TEST_ORDER'
       };
       
+      // Simulate execution data for test mode
+      const orderQty = parseFloat(quantity);
+      const orderPrice = parseFloat(entry_price);
+      const cost = orderQty * orderPrice;
+      const feeRate = order_type === 'Market' ? 0.00075 : 0.00025;
+      const openFee = cost * feeRate;
+      const leverageValue = parseFloat(leverage || '1');
+      const liquidationPrice = calculateLiquidationPrice(side, orderPrice, leverageValue);
+      
+      executionData = {
+        open_fee: openFee,
+        trade_open_ex_time: new Date().toISOString(),
+        liquidation_price: liquidationPrice,
+        cost: cost,
+        value: cost,
+        slippage_percentage: 0,  // No slippage in test mode
+      };
+      
       console.log("Test mode enabled, created simulated order:", orderResult);
     }
 
@@ -368,7 +463,14 @@ export default async function handler(request, context) {
       order_type,
       status: 'open',
       entry_date: new Date().toISOString(),
-      open_time: new Date().toISOString()
+      open_time: new Date().toISOString(),
+      // Add execution data
+      open_fee: executionData.open_fee,
+      trade_open_ex_time: executionData.trade_open_ex_time,
+      liquidation_price: executionData.liquidation_price,
+      cost: executionData.cost,
+      value: executionData.value,
+      slippage_percentage: executionData.slippage_percentage,
     };
     
     // Add order details if available

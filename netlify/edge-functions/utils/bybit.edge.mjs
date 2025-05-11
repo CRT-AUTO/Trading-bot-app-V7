@@ -80,6 +80,7 @@ export async function executeBybitOrder({
   price,
   stopLoss,
   takeProfit,
+  leverage,
   testnet = false,
   category = 'linear',             // USDT perpetual
   recvWindow = DEFAULT_RECV_WINDOW
@@ -88,6 +89,52 @@ export async function executeBybitOrder({
   const endpoint = '/v5/order/create';
 
   try {
+    // Set leverage if provided
+    if (leverage && leverage > 1) {
+      try {
+        const leverageEndpoint = '/v5/position/set-leverage';
+        const leverageBody = {
+          category,
+          symbol,
+          buyLeverage: String(leverage),
+          sellLeverage: String(leverage)
+        };
+
+        const leverageBodyStr = JSON.stringify(leverageBody);
+        const timestamp = await getServerTimestamp(testnet);
+        const signature = await signPost({ 
+          apiSecret, 
+          apiKey, 
+          recvWindow, 
+          timestamp, 
+          body: leverageBodyStr 
+        });
+
+        // Set leverage
+        const leverageResponse = await fetch(`${baseUrl}${leverageEndpoint}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-BAPI-API-KEY': apiKey,
+            'X-BAPI-TIMESTAMP': timestamp,
+            'X-BAPI-RECV-WINDOW': recvWindow,
+            'X-BAPI-SIGN': signature
+          },
+          body: leverageBodyStr
+        });
+
+        const leverageData = await leverageResponse.json();
+        if (leverageData.retCode !== 0 && leverageData.retCode !== 110043) {
+          // 110043 is "leverage not modified" which is fine
+          console.warn(`Warning setting leverage: ${leverageData.retMsg}`);
+        } else {
+          console.log(`Leverage set to ${leverage}x successfully`);
+        }
+      } catch (leverageError) {
+        console.warn('Error setting leverage (continuing anyway):', leverageError);
+      }
+    }
+
     // 1) Build the JSON payload
     const payload = {
       category,
@@ -149,14 +196,64 @@ export async function executeBybitOrder({
       throw new Error(`Bybit API error ${data.retCode}: ${data.retMsg}`);
     }
 
+    // Get the executed price
+    // For market orders, we need to fetch the fill price
+    let executedPrice = price || 0;
+    let feesPaid = 0;
+
+    try {
+      const orderId = data.result.orderId;
+      // Get order details to find the executed price
+      const detailsEndpoint = '/v5/order/history';
+      const detailsParams = new URLSearchParams({
+        category,
+        symbol,
+        orderId,
+        limit: '1',
+        timestamp: timestamp,
+        recv_window: recvWindow
+      });
+
+      const detailsSignature = await signGet({ 
+        apiSecret, 
+        apiKey, 
+        recvWindow, 
+        timestamp, 
+        queryString: detailsParams.toString() 
+      });
+
+      const detailsResponse = await fetch(`${baseUrl}${detailsEndpoint}?${detailsParams.toString()}`, {
+        method: 'GET',
+        headers: {
+          'X-BAPI-API-KEY': apiKey,
+          'X-BAPI-TIMESTAMP': timestamp,
+          'X-BAPI-RECV-WINDOW': recvWindow,
+          'X-BAPI-SIGN': detailsSignature
+        }
+      });
+
+      const detailsData = await detailsResponse.json();
+
+      if (detailsData.retCode === 0 && detailsData.result.list && detailsData.result.list.length > 0) {
+        const orderDetails = detailsData.result.list[0];
+        executedPrice = parseFloat(orderDetails.avgPrice || orderDetails.price || price);
+        feesPaid = parseFloat(orderDetails.cumExecFee || 0);
+        console.log(`Order executed at price: ${executedPrice}, fees: ${feesPaid}`);
+      }
+    } catch (detailsError) {
+      console.warn('Error fetching order details (continuing anyway):', detailsError);
+    }
+
     return {
       orderId: data.result.orderId,
       symbol,
       side,
       orderType,
       qty: quantity,
-      price: price || 0,
-      status: data.result.orderStatus || 'Created'
+      price: executedPrice,
+      fees: feesPaid,
+      status: data.result.orderStatus || 'Created',
+      leverage: leverage || 1
     };
   } catch (error) {
     console.error('Error executing Bybit order:', error);

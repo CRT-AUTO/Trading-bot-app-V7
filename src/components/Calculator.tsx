@@ -1471,7 +1471,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
                             onChange={(e) => handleTradeEntryNotesChange(trade.tradeId, e.target.value)}
                             className="w-full px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-md text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
                             placeholder="Add entry notes here..."
-                            rows={2}
+                            rows={4}
                           />
                         </div>
                         
@@ -1484,7 +1484,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
                             onChange={(e) => handleTradeMidNotesChange(trade.tradeId, e.target.value)}
                             className="w-full px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-md text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
                             placeholder="Add mid-trade notes here..."
-                            rows={2}
+                            rows={4}
                           />
                         </div>
                         
@@ -1497,7 +1497,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
                             onChange={(e) => handleTradeExitNotesChange(trade.tradeId, e.target.value)}
                             className="w-full px-3 py-1.5 text-xs bg-white border border-gray-200 rounded-md text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
                             placeholder="Add exit notes here..."
-                            rows={2}
+                            rows={4}
                           />
                         </div>
                       </div>

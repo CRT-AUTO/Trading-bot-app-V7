@@ -77,6 +77,9 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
   const [compoundResult, setCompoundResult] = useState<number | null>(null);
   const [compoundTable, setCompoundTable] = useState<number[]>([]);
 
+  // Define isExecuteDisabled
+  const isExecuteDisabled = !positionSizeAfterFees || !systemName || saving;
+
   // Advanced compounding states
   const [includeUnrealizedProfits, setIncludeUnrealizedProfits] = useState<boolean>(false);
   const [hasOverlappingStops, setHasOverlappingStops] = useState<boolean>(false);

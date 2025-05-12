@@ -1268,9 +1268,10 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
           {!showCompounding && (
             <button
               onClick={saveToJournal}
-              disabled={!positionSizeAfterFees || saving}
+              disabled={isExecuteDisabled}
+              title={isExecuteDisabled ? 'Please fill all required fields and select a system' : ''}
               className={`w-full px-4 py-2 rounded-md text-sm font-medium ${
-                !positionSizeAfterFees || saving
+                isExecuteDisabled
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   : 'bg-green-600 text-white hover:bg-green-700'
               }`}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Bot, LineChart, History, Settings, FileText, LogOut, BarChart3, BarChart, Calculator, BarChart as ChartBar, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
+import { Bot, LineChart, History, Settings, FileText, LogOut, BarChart3, BarChart, Calculator, BarChart as ChartBar, ChevronLeft, ChevronRight, Menu, PieChart } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const DashboardLayout: React.FC = () => {
@@ -24,7 +24,8 @@ const DashboardLayout: React.FC = () => {
     { path: '/trades', label: 'Bot Trades', icon: <History size={20} /> },
     { path: '/manual-trades', label: 'Manual Trading', icon: <Calculator size={20} /> },
     { path: '/manual-trades-history', label: 'Manual Trades', icon: <ChartBar size={20} /> },
-    { path: '/analytics', label: 'Analytics', icon: <BarChart size={20} /> },
+    { path: '/manual-trades-analytics', label: 'Trade Analytics', icon: <PieChart size={20} /> },
+    { path: '/analytics', label: 'Bot Analytics', icon: <BarChart size={20} /> },
     { path: '/settings', label: 'Settings', icon: <Settings size={20} /> },
     { path: '/docs', label: 'Documentation', icon: <FileText size={20} /> },
   ];

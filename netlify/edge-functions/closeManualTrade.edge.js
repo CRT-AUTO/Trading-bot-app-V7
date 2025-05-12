@@ -242,7 +242,8 @@ export default async function handler(request, context) {
       midTradeNotes, 
       entryPicUrl,
       takeProfit,
-      exitPrice
+      exitPrice,
+      dataPicUrl
     } = body || {};
     
     console.log("Close trade request data:", { 
@@ -252,7 +253,8 @@ export default async function handler(request, context) {
       midTradeNotes, 
       entryPicUrl,
       takeProfit,
-      exitPrice
+      exitPrice,
+      dataPicUrl
     });
     
     // Get the trade to verify it exists and is open
@@ -600,6 +602,7 @@ export default async function handler(request, context) {
         mid_notes: midTradeNotes || trade.mid_notes,
         pic_exit: exitPicUrl || trade.pic_exit,
         pic_entry: entryPicUrl || trade.pic_entry,
+        pic_data: dataPicUrl || trade.pic_data,
         take_profit: takeProfit || trade.take_profit,
         close_price: exitPrice || trade.close_price,
         updated_at: new Date().toISOString()
@@ -761,6 +764,7 @@ export default async function handler(request, context) {
       mid_notes: midTradeNotes || trade.mid_notes,
       pic_exit: exitPicUrl || trade.pic_exit,
       pic_entry: entryPicUrl || trade.pic_entry,
+      pic_data: dataPicUrl || trade.pic_data, // Add this for Data Pic integration
       take_profit: takeProfit || trade.take_profit,
       trade_metrics: tradeMetrics,
       deviation: deviationPercent,

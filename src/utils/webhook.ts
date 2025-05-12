@@ -12,6 +12,7 @@ export interface Trade {
   fee: number;
   systemName: string;
   entryPicUrl: string;
+  dataPicUrl?: string;
   notes: string;
   takeProfitPrice: number;
   timestamp: number;

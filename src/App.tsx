@@ -20,6 +20,7 @@ import Logs from './pages/Logs';
 import ManualTrades from './pages/ManualTrades';
 import ManualTradeHistory from './pages/ManualTradeHistory';
 import ManageSystems from './pages/ManageSystems';
+import ManualTradeAnalytics from './pages/ManualTradeAnalytics';
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -53,6 +54,7 @@ function App() {
               <Route path="trades" element={<TradeHistory />} />
               <Route path="manual-trades" element={<ManualTrades />} />
               <Route path="manual-trades-history" element={<ManualTradeHistory />} />
+              <Route path="manual-trades-analytics" element={<ManualTradeAnalytics />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="analytics/:botId" element={<Analytics />} />
               <Route path="settings" element={<AccountSettings />} />

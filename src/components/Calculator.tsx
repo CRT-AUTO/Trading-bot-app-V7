@@ -40,9 +40,9 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
 
   // Journal entry fields (moved from JournalEntry component)
   const [systemName, setSystemName] = useState<string>('');
-  // const [entryPicUrl, setEntryPicUrl] = useState<string>(''); // not currently used as the code to show these inputs is also blanked
-  // const [notes, setNotes] = useState<string>(''); // not currently used as the code to show these inputs is also blanked
-
+  const [entryPicUrl, setEntryPicUrl] = useState<string>('');
+  const [notes, setNotes] = useState<string>(''); 
+  
   // Calculated values
   const [positionSizeBeforeFees, setPositionSizeBeforeFees] = useState<string>('');
   const [positionSizeAfterFees, setPositionSizeAfterFees] = useState<string>('');

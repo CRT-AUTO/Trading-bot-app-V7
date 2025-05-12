@@ -22,6 +22,7 @@ type ManualTrade = {
   exit_notes: string | null;
   pic_entry: string | null;
   pic_exit: string | null;
+  pic_data: string | null; // Added for data picture
   win_loss: string | null;
   finish_r: number | null;
   finish_usd: number | null;
@@ -52,6 +53,7 @@ const ManualTradeHistory: React.FC = () => {
   const [updatedMidNotes, setUpdatedMidNotes] = useState('');
   const [updatedEntryPicUrl, setUpdatedEntryPicUrl] = useState('');
   const [updatedExitPicUrl, setUpdatedExitPicUrl] = useState('');
+  const [updatedDataPicUrl, setUpdatedDataPicUrl] = useState(''); // Added for data picture
   const [updatedTakeProfit, setUpdatedTakeProfit] = useState<string>('');
   const [sortField, setSortField] = useState<string>('entry_date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -161,6 +163,7 @@ const ManualTradeHistory: React.FC = () => {
     setUpdatedMidNotes(trade.mid_notes || '');
     setUpdatedEntryPicUrl(trade.pic_entry || '');
     setUpdatedExitPicUrl(trade.pic_exit || '');
+    setUpdatedDataPicUrl(trade.pic_data || ''); // Initialize data picture
     setUpdatedTakeProfit(trade.take_profit ? trade.take_profit.toString() : '');
     setEditMode(false);
     setShowDetailsModal(true);
@@ -201,6 +204,7 @@ const ManualTradeHistory: React.FC = () => {
           mid_notes: updatedMidNotes,
           pic_entry: updatedEntryPicUrl,
           pic_exit: updatedExitPicUrl,
+          pic_data: updatedDataPicUrl, // Include data picture in update
           take_profit: updatedTakeProfit ? parseFloat(updatedTakeProfit) : null,
           updated_at: new Date().toISOString()
         })
@@ -220,6 +224,7 @@ const ManualTradeHistory: React.FC = () => {
               mid_notes: updatedMidNotes,
               pic_entry: updatedEntryPicUrl, 
               pic_exit: updatedExitPicUrl,
+              pic_data: updatedDataPicUrl, // Update data picture
               take_profit: updatedTakeProfit ? parseFloat(updatedTakeProfit) : null
             } 
           : trade
@@ -237,6 +242,7 @@ const ManualTradeHistory: React.FC = () => {
         mid_notes: updatedMidNotes,
         pic_entry: updatedEntryPicUrl,
         pic_exit: updatedExitPicUrl,
+        pic_data: updatedDataPicUrl, // Update data picture
         take_profit: updatedTakeProfit ? parseFloat(updatedTakeProfit) : null
       });
       
@@ -263,7 +269,9 @@ const ManualTradeHistory: React.FC = () => {
           notes: trade.exit_notes || trade.notes,
           entryNotes: trade.entry_notes,
           midTradeNotes: trade.mid_notes,
-          entryPicUrl: trade.pic_entry
+          exitNotes: trade.exit_notes,
+          entryPicUrl: trade.pic_entry,
+          dataPicUrl: trade.pic_data // Include data picture
         }),
       });
       
@@ -920,6 +928,45 @@ const ManualTradeHistory: React.FC = () => {
                       <img 
                         src={selectedTrade.pic_exit} 
                         alt="Exit chart" 
+                        className="max-h-64 object-contain rounded border border-gray-200"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://placehold.co/400x300?text=Invalid+Image+URL';
+                        }}
+                      />
+                    </div>
+                  )
+                )}
+
+            {editMode ? (
+                  <div className="col-span-2 mt-2">
+                    <p className="text-sm text-gray-500 mb-1">Data Picture URL</p>
+                    <input
+                      type="text"
+                      value={updatedDataPicUrl}
+                      onChange={(e) => setUpdatedDataPicUrl(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
+                      placeholder="https://example.com/data-chart.png"
+                    />
+                    {updatedDataPicUrl && (
+                      <div className="mt-2 p-2 border border-gray-200 rounded-md">
+                        <img 
+                          src={updatedDataPicUrl} 
+                          alt="Data chart" 
+                          className="max-h-48 object-contain mx-auto"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://placehold.co/400x300?text=Invalid+Image+URL';
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  selectedTrade.pic_data && (
+                    <div className="col-span-2 mt-2">
+                      <p className="text-sm text-gray-500 mb-1">Data Chart</p>
+                      <img 
+                        src={selectedTrade.pic_data} 
+                        alt="Data chart" 
                         className="max-h-64 object-contain rounded border border-gray-200"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = 'https://placehold.co/400x300?text=Invalid+Image+URL';

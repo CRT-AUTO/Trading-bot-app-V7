@@ -639,7 +639,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
 
   const handleTradeDataPicUpload = async (tradeId: string, file: File | undefined) => {
     if (!file) return;
-
+  
     setUploading((prev) => ({ ...prev, [tradeId]: true }));
     setUploadError((prev) => ({ ...prev, [tradeId]: null }));
     try {
@@ -647,40 +647,45 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
         setUploadError((prev) => ({ ...prev, [tradeId]: 'Supabase client is not initialized' }));
         return;
       }
-
+  
       const fileExt = file.name.split('.').pop();
       const fileName = `trade-data-pics/${tradeId}-${Date.now()}.${fileExt}`;
+      console.log('Uploading to bucket: images, File path:', fileName);
+  
       const { error: uploadError } = await supabase.storage
         .from('images')
         .upload(fileName, file, {
           contentType: file.type,
-          upsert: true, // Allow overwriting if the file already exists
+          upsert: true,
         });
-
+  
       if (uploadError) {
+        console.error('Upload error:', uploadError);
         setUploadError((prev) => ({ ...prev, [tradeId]: 'Failed to upload image: ' + uploadError.message }));
         return;
       }
-
+  
       const { data } = supabase.storage.from('images').getPublicUrl(fileName);
       const publicUrl = data.publicUrl;
-
+      console.log('Public URL:', publicUrl);
+  
       if (!publicUrl) {
         setUploadError((prev) => ({ ...prev, [tradeId]: 'Failed to retrieve public URL' }));
         return;
       }
-
+  
       setTradeDataPics((prev) => ({
         ...prev,
         [tradeId]: { mode: 'file', url: publicUrl },
       }));
-    } catch (error: any) {
-      setUploadError((prev) => ({ ...prev, [tradeId]: 'Error handling image upload: ' + error.message }));
+    } catch (error) {
+      console.error('Unexpected error during upload:', error);
+      setUploadError((prev) => ({ ...prev, [tradeId]: 'Error handling image upload: ' + (error.message || 'Unknown error') }));
     } finally {
       setUploading((prev) => ({ ...prev, [tradeId]: false }));
     }
   };
-
+  
   const setUploadMode = (tradeId: string, mode: 'file' | 'url') => {
     setTradeDataPics((prev) => {
       const current = prev[tradeId] || { mode: 'file', url: '' };

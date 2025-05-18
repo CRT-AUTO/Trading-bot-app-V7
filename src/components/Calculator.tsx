@@ -648,43 +648,24 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
         return;
       }
   
-      if (!user) {
-        setUploadError((prev) => ({ ...prev, [tradeId]: 'User is not authenticated. Please log in to upload images.' }));
-        return;
-      }
-  
-      // Refresh the session to ensure the token is valid
-      const { error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError) {
-        setUploadError((prev) => ({ ...prev, [tradeId]: 'Failed to refresh session: ' + refreshError.message }));
-        return;
-      }
-  
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !sessionData.session) {
-        setUploadError((prev) => ({ ...prev, [tradeId]: 'No active session. Please log in again.' }));
-        return;
-      }
-      console.log('Session after refresh:', sessionData.session ? 'Session found' : 'No session');
-  
-      const fileExt = file.name.split('.').pop();
-      const fileName = `trade-data-pics/${tradeId}-${Date.now()}.${fileExt}`;
+      const fileName = `test_${Date.now()}.png`; // Extremely simple path
       console.log('Uploading to bucket: images, File path:', fileName);
+      console.log('File details:', { name: file.name, size: file.size, type: file.type });
   
-      const { error: uploadError } = await supabase.storage
+      const { data, error: uploadError } = await supabase.storage
         .from('images')
-        .upload(fileName, file, {
-          contentType: file.type,
-          upsert: true,
-        });
+        .upload(fileName, file);
   
       if (uploadError) {
+        console.error('Detailed upload error:', uploadError);
         setUploadError((prev) => ({ ...prev, [tradeId]: 'Failed to upload image: ' + uploadError.message }));
         return;
       }
   
-      const { data } = supabase.storage.from('images').getPublicUrl(fileName);
-      const publicUrl = data.publicUrl;
+      const { data: urlData } = supabase.storage.from('images').getPublicUrl(fileName);
+      const publicUrl = urlData.publicUrl;
+      console.log('Public URL:', publicUrl);
+  
       if (!publicUrl) {
         setUploadError((prev) => ({ ...prev, [tradeId]: 'Failed to retrieve public URL' }));
         return;
@@ -695,6 +676,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
         [tradeId]: { mode: 'file', url: publicUrl },
       }));
     } catch (error) {
+      console.error('Unexpected error during upload:', error);
       setUploadError((prev) => ({ ...prev, [tradeId]: 'Error handling image upload: ' + (error.message || 'Unknown error') }));
     } finally {
       setUploading((prev) => ({ ...prev, [tradeId]: false }));

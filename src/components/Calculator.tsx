@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Copy, RefreshCw, AlertTriangle, Check, Settings } from 'lucide-react';
 import { calculateCompoundGrowth, calculateCompoundedProfits, calculateCompoundedRMultiple, generateCompoundGrowthTable, calculateCompoundPositionSize, checkOverlappingStops, calculateCombinedRiskProfile } from '../utils/compounding';
 import { Trade, saveTradeToJournal, closeTradeViaWebhook } from '../utils/webhook';
@@ -21,7 +21,6 @@ type ApiKey = {
 };
 
 export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypto }) => {
-  // Main form inputs
   const [entryPrice, setEntryPrice] = useState<string>('');
   const [stopLoss, setStopLoss] = useState<string>('');
   const [takeProfitPrice, setTakeProfitPrice] = useState<string>('');
@@ -32,18 +31,13 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
   const [direction, setDirection] = useState<'long' | 'short'>('long');
   const [decimalPlaces, setDecimalPlaces] = useState<number>(4);
 
-  // Fee type checkboxes
   const [entryTaker, setEntryTaker] = useState<boolean>(true);
   const [entryMaker, setEntryMaker] = useState<boolean>(false);
   const [exitTaker, setExitTaker] = useState<boolean>(true);
   const [exitMaker, setExitMaker] = useState<boolean>(false);
 
-  // Journal entry fields (moved from JournalEntry component)
   const [systemName, setSystemName] = useState<string>('');
-  // const [entryPicUrl, setEntryPicUrl] = useState<string>(''); // not currently used as the code to show these inputs is also blanked
-  // const [notes, setNotes] = useState<string>(''); // not currently used as the code to show these inputs is also blanked
 
-  // Calculated values
   const [positionSizeBeforeFees, setPositionSizeBeforeFees] = useState<string>('');
   const [positionSizeAfterFees, setPositionSizeAfterFees] = useState<string>('');
   const [leverageNeeded, setLeverageNeeded] = useState<string>('');
@@ -53,37 +47,22 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
   const [riskPercentage, setRiskPercentage] = useState<number>(0);
   const [isLiquidationRisky, setIsLiquidationRisky] = useState<boolean>(false);
 
-  // Trade management
   const [openTrades, setOpenTrades] = useState<Trade[]>([]);
   const [selectedTrade, setSelectedTrade] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState<boolean>(false);
 
-  // Open trade management enhancements
   const [tradeEntryNotes, setTradeEntryNotes] = useState<Record<string, string>>({});
   const [tradeMidNotes, setTradeMidNotes] = useState<Record<string, string>>({});
   const [tradeExitNotes, setTradeExitNotes] = useState<Record<string, string>>({});
   const [tradeEntryPics, setTradeEntryPics] = useState<Record<string, string>>({});
   const [tradeExitPics, setTradeExitPics] = useState<Record<string, string>>({});
   const [tradeDataPics, setTradeDataPics] = useState<Record<string, { mode: 'file' | 'url'; url: string }>>({});
-
-  const setUploadMode = (tradeId, mode) => {
-    setTradeDataPics((prev) => ({
-      ...prev,
-      [tradeId]: { ...prev[tradeId], mode, url: prev[tradeId]?.url || '' },
-    }));
-  };
-  
-  const handleTradeDataPicChange = (tradeId, value) => {
-    setTradeDataPics((prev) => ({
-      ...prev,
-      [tradeId]: { ...prev[tradeId], mode: 'url', url: value },
-    }));
-  };
+  const [uploadError, setUploadError] = useState<Record<string, string | null>>({});
+  const [uploading, setUploading] = useState<Record<string, boolean>>({}); // New state for upload progress
   const [tradeTakeProfits, setTradeTakeProfits] = useState<Record<string, string>>({});
 
-  // Compounding fields
   const [showCompounding, setShowCompounding] = useState<boolean>(false);
   const [initialCapital, setInitialCapital] = useState<string>('1000');
   const [profitPercentage, setProfitPercentage] = useState<string>('5');
@@ -92,10 +71,8 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
   const [compoundResult, setCompoundResult] = useState<number | null>(null);
   const [compoundTable, setCompoundTable] = useState<number[]>([]);
 
-  // Define isExecuteDisabled
   const isExecuteDisabled = !positionSizeAfterFees || !systemName || saving;
 
-  // Advanced compounding states
   const [includeUnrealizedProfits, setIncludeUnrealizedProfits] = useState<boolean>(false);
   const [hasOverlappingStops, setHasOverlappingStops] = useState<boolean>(false);
   const [combinedRiskProfile, setCombinedRiskProfile] = useState<{
@@ -103,30 +80,26 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     risksPerTrade: { tradeId: string; riskPercentage: number }[];
     isExceedingRiskLimit: boolean;
   } | null>(null);
-  
-  // Supabase and auth
+
   const { supabase } = useSupabase();
   const { user } = useAuth();
-  
-  // API key selection
+
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [selectedApiKeyId, setSelectedApiKeyId] = useState<string>('');
   const [testMode, setTestMode] = useState<boolean>(false);
 
-  // Load open trades from localStorage
   useEffect(() => {
     const savedTrades = localStorage.getItem('openTrades');
     if (savedTrades) {
       const parsedTrades = JSON.parse(savedTrades);
       setOpenTrades(parsedTrades);
       
-      // Initialize state for trade journal fields
       const entryNotesInit: Record<string, string> = {};
       const midNotesInit: Record<string, string> = {};
       const exitNotesInit: Record<string, string> = {};
       const entryPicsInit: Record<string, string> = {};
       const exitPicsInit: Record<string, string> = {};
-      const dataPicsInit: Record<string, { mode: 'file' | 'url'; url: string }> = {}; // ----- new
+      const dataPicsInit: Record<string, { mode: 'file' | 'url'; url: string }> = {};
       const takeProfitsInit: Record<string, string> = {};
       
       parsedTrades.forEach((trade: Trade) => {
@@ -135,7 +108,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
         exitNotesInit[trade.tradeId] = trade.notes || '';
         entryPicsInit[trade.tradeId] = trade.entryPicUrl || '';
         exitPicsInit[trade.tradeId] = trade.exitPicUrl || '';
-        dataPicsInit[trade.tradeId] = { mode: 'url', url: trade.dataPicUrl || '' }; // ----- new
+        dataPicsInit[trade.tradeId] = { mode: trade.dataPicMode || 'url', url: trade.dataPicUrl || '' };
         takeProfitsInit[trade.tradeId] = trade.takeProfitPrice ? trade.takeProfitPrice.toString() : '';
       });
       
@@ -144,11 +117,10 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
       setTradeExitNotes(exitNotesInit);
       setTradeEntryPics(entryPicsInit);
       setTradeExitPics(exitPicsInit);
-      setTradeDataPics(dataPicsInit); // ----- new
+      setTradeDataPics(dataPicsInit);
       setTradeTakeProfits(takeProfitsInit);
     }
 
-    // Load saved calculator settings
     const savedSettings = localStorage.getItem('calculatorSettings');
     if (savedSettings) {
       const settings = JSON.parse(savedSettings);
@@ -164,8 +136,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
       setTestMode(settings.testMode || false);
     }
   }, []);
-  
-  // Fetch API keys
+
   useEffect(() => {
     const fetchApiKeys = async () => {
       if (!user) return;
@@ -183,7 +154,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
         
         setApiKeys(data || []);
         
-        // Select default key if available
         const defaultKey = data?.find(key => key.is_default);
         if (defaultKey) {
           setSelectedApiKeyId(defaultKey.id);
@@ -195,8 +165,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     
     fetchApiKeys();
   }, [user, supabase]);
-  
-  // Save calculator settings to localStorage when they change
+
   useEffect(() => {
     const settings = {
       takerFee,
@@ -224,9 +193,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     testMode
   ]);
 
-  // Save open trades to localStorage whenever they change
   useEffect(() => {
-    // Update trades with the latest journal field values
     const updatedTrades = openTrades.map(trade => ({
       ...trade,
       notes: tradeExitNotes[trade.tradeId] || trade.notes,
@@ -235,6 +202,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
       entryPicUrl: tradeEntryPics[trade.tradeId] || trade.entryPicUrl,
       exitPicUrl: tradeExitPics[trade.tradeId] || trade.exitPicUrl,
       dataPicUrl: tradeDataPics[trade.tradeId]?.url || '',
+      dataPicMode: tradeDataPics[trade.tradeId]?.mode || 'url',
       takeProfitPrice: tradeTakeProfits[trade.tradeId] ? parseFloat(tradeTakeProfits[trade.tradeId]) : trade.takeProfitPrice
     }));
     
@@ -250,14 +218,12 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     tradeTakeProfits
   ]);
 
-  // Update entry price when live price changes
   useEffect(() => {
     if (livePrice) {
       setEntryPrice(parseFloat(livePrice).toFixed(2));
     }
   }, [livePrice]);
 
-  // Reset success/error messages after 3 seconds
   useEffect(() => {
     if (saveSuccess || saveError) {
       const timer = setTimeout(() => {
@@ -269,14 +235,12 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     }
   }, [saveSuccess, saveError]);
 
-  // Calculate position size and other values whenever inputs change
   useEffect(() => {
     if (entryPrice && stopLoss) {
       calculatePositionSize();
     }
   }, [entryPrice, stopLoss, riskAmount, takerFee, makerFee, direction, entryTaker, entryMaker, exitTaker, exitMaker, decimalPlaces, availableCapital, openTrades, includeUnrealizedProfits, showCompounding]);
 
-  // Auto-detect direction based on entry price and stop loss
   useEffect(() => {
     if (entryPrice && stopLoss) {
       const entry = parseFloat(entryPrice);
@@ -292,7 +256,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     }
   }, [entryPrice, stopLoss]);
 
-  // Check for overlapping stops when entry price or stop loss changes
   useEffect(() => {
     if (entryPrice && stopLoss && openTrades.length > 0 && showCompounding) {
       const entry = parseFloat(entryPrice);
@@ -307,7 +270,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     }
   }, [entryPrice, stopLoss, openTrades, showCompounding]);
 
-  // Calculate combined risk profile when open trades change
   useEffect(() => {
     if (openTrades.length > 0 && availableCapital) {
       const capital = parseFloat(availableCapital);
@@ -320,7 +282,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     }
   }, [openTrades, availableCapital]);
 
-  // Close trade details when clicking outside
   useEffect(() => {
     if (selectedTrade) {
       const handleClickOutside = (event: MouseEvent) => {
@@ -328,7 +289,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
         const tradeElement = document.querySelector(`[data-trade-id="${selectedTrade}"]`);
         const summaryElement = document.querySelector(`[data-trade-summary-id="${selectedTrade}"]`);
 
-        // Check if the click is outside both the details and the summary of the selected trade
         if (
           tradeElement && !tradeElement.contains(target) &&
           summaryElement && !summaryElement.contains(target)
@@ -342,12 +302,10 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     }
   }, [selectedTrade]);
 
-  // Copy to clipboard function
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
   };
 
-  // Handle fee type checkboxes
   const handleEntryTakerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const checked = e.target.checked;
     setEntryTaker(checked);
@@ -372,7 +330,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     if (checked) setExitTaker(false);
   };
 
-  // Calculate the position size based on inputs
   const calculatePositionSize = () => {
     if (!entryPrice || !stopLoss || !riskAmount || !availableCapital) {
       setPositionSizeBeforeFees('');
@@ -447,7 +404,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     setRiskPercentage(riskPercent);
   };
 
-  // Calculate compounding results
   const calculateCompounding = () => {
     const capital = parseFloat(initialCapital);
     const profit = parseFloat(profitPercentage);
@@ -466,7 +422,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     setCompoundTable(table);
   };
 
-  // Reset all form fields
   const resetForm = () => {
     setEntryPrice('');
     setStopLoss('');
@@ -477,8 +432,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     setMakerFee('0.02');
     setDirection('long');
     setSystemName('');
-    setEntryPicUrl('');
-    setNotes('');
     setPositionSizeBeforeFees('');
     setPositionSizeAfterFees('');
     setLeverageNeeded('');
@@ -493,7 +446,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     setIsLiquidationRisky(false);
   };
 
-  // Save trade to journal and execute on Bybit
   const saveToJournal = async () => {
     if (!user) {
       setSaveError('You must be logged in to save trades');
@@ -528,8 +480,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
         max_risk: parseFloat(riskAmount),
         leverage: leverageValue,
         system_id: systemName || null,
-        notes: notes || null,
-        pic_entry: entryPicUrl || null,
         order_type: entryTaker ? 'Market' : 'Limit',
         test_mode: testMode
       };
@@ -561,9 +511,10 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
         leverage: leverageValue,
         fee: entryTaker ? parseFloat(takerFee) : parseFloat(makerFee),
         systemName: systemName || '',
-        entryPicUrl: entryPicUrl || '',
-        dataPicUrl: tradeDataPics[result.tradeId]?.url || '', // Added for Data Pic integration
-        entryNotes: notes || '',
+        entryPicUrl: '',
+        dataPicUrl: tradeDataPics[result.tradeId]?.url || '',
+        dataPicMode: tradeDataPics[result.tradeId]?.mode || 'file',
+        entryNotes: '',
         midTradeNotes: '',
         notes: '',
         exitPicUrl: '',
@@ -574,12 +525,12 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
       
       setOpenTrades(prevTrades => [...prevTrades, newTrade]);
       
-      setTradeEntryNotes(prev => ({ ...prev, [result.tradeId]: notes || '' }));
+      setTradeEntryNotes(prev => ({ ...prev, [result.tradeId]: '' }));
       setTradeMidNotes(prev => ({ ...prev, [result.tradeId]: '' }));
       setTradeExitNotes(prev => ({ ...prev, [result.tradeId]: '' }));
-      setTradeEntryPics(prev => ({ ...prev, [result.tradeId]: entryPicUrl || '' }));
+      setTradeEntryPics(prev => ({ ...prev, [result.tradeId]: '' }));
       setTradeExitPics(prev => ({ ...prev, [result.tradeId]: '' }));
-      setTradeDataPics(prev => ({ ...prev, [result.tradeId]: { mode: 'file', url: '' } })); // Initialize with proper structure
+      setTradeDataPics(prev => ({ ...prev, [result.tradeId]: { mode: 'file', url: '' } }));
       setTradeTakeProfits(prev => ({ 
         ...prev, 
         [result.tradeId]: takeProfitPrice || ''
@@ -595,7 +546,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     }
   };
 
-  // Handle field changes for open trades
   const handleTradeEntryNotesChange = (tradeId: string, value: string) => {
     setTradeEntryNotes(prev => ({ ...prev, [tradeId]: value }));
   };
@@ -616,20 +566,24 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     setTradeExitPics(prev => ({ ...prev, [tradeId]: value }));
   };
 
-  // const handleTradeDataPicChange = (tradeId: string, value: string) => {
-  // setTradeDataPics(prev => ({ ...prev, [tradeId]: value })); // ------ new
-  // };
+  const handleTradeDataPicChange = (tradeId: string, value: string) => {
+    setTradeDataPics((prev) => {
+      const current = prev[tradeId] || { mode: 'file', url: '' };
+      return {
+        ...prev,
+        [tradeId]: { ...current, mode: 'url', url: value },
+      };
+    });
+  };
 
   const handleTradeTakeProfitChange = (tradeId: string, value: string) => {
     setTradeTakeProfits(prev => ({ ...prev, [tradeId]: value }));
   };
 
-  // Handle trade selection
   const handleTradeSelect = (tradeId: string) => {
     setSelectedTrade(tradeId === selectedTrade ? null : tradeId);
   };
 
-  // Close a trade
   const closeTrade = async () => {
     if (!selectedTrade) return;
     
@@ -643,10 +597,11 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
       const closeData = {
         notes: tradeExitNotes[selectedTrade] || '',
         exitPicUrl: tradeExitPics[selectedTrade] || '',
-        dataPicUrl: tradeDataPics[selectedTrade]?.url || '', // ----new 
+        dataPicUrl: tradeDataPics[selectedTrade]?.url || '',
+        dataPicMode: tradeDataPics[selectedTrade]?.mode || 'url',
         entryNotes: tradeEntryNotes[selectedTrade] || '',
         midTradeNotes: tradeMidNotes[selectedTrade] || '',
-        entryPicUrl: tradeEntryPics[selectedTrade] || '', // Added entryPicUrl
+        entryPicUrl: tradeEntryPics[selectedTrade] || '',
         takeProfit: tradeTakeProfits[selectedTrade] ? parseFloat(tradeTakeProfits[selectedTrade]) : undefined,
         exitPrice: livePrice ? parseFloat(livePrice) : undefined
       };
@@ -667,6 +622,11 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
       setOpenTrades(prevTrades => 
         prevTrades.filter(trade => trade.tradeId !== selectedTrade)
       );
+      setTradeDataPics(prev => {
+        const newState = { ...prev };
+        delete newState[selectedTrade];
+        return newState;
+      });
       setSelectedTrade(null);
       setSaveSuccess(true);
     } catch (error: any) {
@@ -677,49 +637,63 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     }
   };
 
-  // handleTradeDataPicUpload Function
-  const handleTradeDataPicUpload = async (tradeId, file) => {
+  const handleTradeDataPicUpload = async (tradeId: string, file: File | undefined) => {
     if (!file) return;
-  
+
+    setUploading((prev) => ({ ...prev, [tradeId]: true }));
+    setUploadError((prev) => ({ ...prev, [tradeId]: null }));
     try {
       if (!supabase) {
-        console.error('Supabase client is not initialized');
+        setUploadError((prev) => ({ ...prev, [tradeId]: 'Supabase client is not initialized' }));
         return;
       }
-  
-      const fileName = `trade-data-pics/${tradeId}-${Date.now()}.${file.name.split('.').pop()}`;
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `trade-data-pics/${tradeId}-${Date.now()}.${fileExt}`;
       const { error: uploadError } = await supabase.storage
         .from('images')
         .upload(fileName, file, {
           contentType: file.type,
+          upsert: true, // Allow overwriting if the file already exists
         });
-  
+
       if (uploadError) {
-        console.error('Error uploading image to Supabase:', uploadError);
+        setUploadError((prev) => ({ ...prev, [tradeId]: 'Failed to upload image: ' + uploadError.message }));
         return;
       }
-  
+
       const { data } = supabase.storage.from('images').getPublicUrl(fileName);
       const publicUrl = data.publicUrl;
-  
+
       if (!publicUrl) {
-        console.error('Failed to retrieve public URL');
+        setUploadError((prev) => ({ ...prev, [tradeId]: 'Failed to retrieve public URL' }));
         return;
       }
-  
+
       setTradeDataPics((prev) => ({
         ...prev,
         [tradeId]: { mode: 'file', url: publicUrl },
       }));
-    } catch (error) {
-      console.error('Error handling image upload:', error);
+    } catch (error: any) {
+      setUploadError((prev) => ({ ...prev, [tradeId]: 'Error handling image upload: ' + error.message }));
+    } finally {
+      setUploading((prev) => ({ ...prev, [tradeId]: false }));
     }
   };
-  
+
+  const setUploadMode = (tradeId: string, mode: 'file' | 'url') => {
+    setTradeDataPics((prev) => {
+      const current = prev[tradeId] || { mode: 'file', url: '' };
+      return {
+        ...prev,
+        [tradeId]: { ...current, mode, url: current.url || '' },
+      };
+    });
+  };
+
   return (
     <div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Position Calculator and Compounding Calculator - Left Column */}
         <div className="space-y-4">
           <div className="mb-2">
             <h3 className="text-sm font-medium text-gray-700">Position Calculator</h3>
@@ -973,10 +947,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
                 )}
               </div>
               
-
-
-              
-              
               <div className="flex gap-2">
                 <button
                   onClick={() => calculatePositionSize()}
@@ -1172,7 +1142,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
           )}
         </div>
         
-        {/* Middle column: Results */}
         <div className="space-y-4">
           {!showCompounding ? (
             <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
@@ -1357,7 +1326,6 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
           )}
         </div>
         
-        {/* Right Column: Open Trades List */}
         <div className="space-y-4">
           <h3 className="text-sm font-medium text-gray-700">Open Trades</h3>
           
@@ -1509,12 +1477,21 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
                             </button>
                           </div>
                           {tradeDataPics[trade.tradeId]?.mode === 'file' || !tradeDataPics[trade.tradeId]?.mode ? (
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => handleTradeDataPicUpload(trade.tradeId, e.target.files?.[0])}
-                              className="w-full px-3 py-1.5 text-xs bg-white border border-gray-300 rounded-md"
-                            />
+                            <div>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleTradeDataPicUpload(trade.tradeId, e.target.files?.[0])}
+                                className="w-full px-3 py-1.5 text-xs bg-white border border-gray-300 rounded-md"
+                                disabled={uploading[trade.tradeId]}
+                              />
+                              {uploading[trade.tradeId] && (
+                                <div className="text-xs text-gray-500 mt-1 flex items-center">
+                                  <RefreshCw size={12} className="animate-spin mr-1" />
+                                  Uploading...
+                                </div>
+                              )}
+                            </div>
                           ) : (
                             <input
                               type="text"
@@ -1524,7 +1501,10 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
                               placeholder="https://example.com/data.png"
                             />
                           )}
-                          {tradeDataPics[trade.tradeId]?.url && (
+                          {uploadError[trade.tradeId] && (
+                            <div className="text-xs text-red-700 mt-1">{uploadError[trade.tradeId]}</div>
+                          )}
+                          {tradeDataPics[trade.tradeId]?.url && !uploading[trade.tradeId] && (
                             <div className="mt-1 p-1 border border-gray-200 rounded-md">
                               <img 
                                 src={tradeDataPics[trade.tradeId]?.url} 

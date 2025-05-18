@@ -648,7 +648,8 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
         return;
       }
   
-      const fileName = `test_${Date.now()}.png`; // Extremely simple path
+      const fileExt = file.name.split('.').pop();
+      const fileName = `trade-data-pics/${tradeId}_${Date.now()}.${fileExt}`;
       console.log('Uploading to bucket: images, File path:', fileName);
       console.log('File details:', { name: file.name, size: file.size, type: file.type });
   

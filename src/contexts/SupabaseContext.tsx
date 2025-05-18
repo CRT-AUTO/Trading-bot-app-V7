@@ -20,8 +20,8 @@ const getSupabaseConfig = () => {
   
   // Always prioritize environment variables during development
   // Only fall back to runtime values if env variables are not available
-  const supabaseUrl = envUrl || '';
-  const supabaseAnonKey = envKey || '';
+  const supabaseUrl = envUrl || runtimeUrl || '';
+  const supabaseAnonKey = envKey || runtimeKey || '';
   
   console.log('Supabase URL:', supabaseUrl ? 'URL configured' : 'Missing URL');
   console.log('Supabase Anon Key:', supabaseAnonKey ? 'Key configured' : 'Missing key');

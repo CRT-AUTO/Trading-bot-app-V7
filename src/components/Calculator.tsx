@@ -40,9 +40,9 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
 
   // Journal entry fields (moved from JournalEntry component)
   const [systemName, setSystemName] = useState<string>('');
-  const [entryPicUrl, setEntryPicUrl] = useState<string>('');
-  const [notes, setNotes] = useState<string>(''); 
-  
+  // const [entryPicUrl, setEntryPicUrl] = useState<string>(''); // not currently used as the code to show these inputs is also blanked
+  // const [notes, setNotes] = useState<string>(''); // not currently used as the code to show these inputs is also blanked
+
   // Calculated values
   const [positionSizeBeforeFees, setPositionSizeBeforeFees] = useState<string>('');
   const [positionSizeAfterFees, setPositionSizeAfterFees] = useState<string>('');
@@ -66,7 +66,21 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
   const [tradeExitNotes, setTradeExitNotes] = useState<Record<string, string>>({});
   const [tradeEntryPics, setTradeEntryPics] = useState<Record<string, string>>({});
   const [tradeExitPics, setTradeExitPics] = useState<Record<string, string>>({});
-  const [tradeDataPics, setTradeDataPics] = useState<Record<string, string>>({}); // ---- new
+  const [tradeDataPics, setTradeDataPics] = useState<Record<string, { mode: 'file' | 'url'; url: string }>>({});
+
+  const setUploadMode = (tradeId, mode) => {
+    setTradeDataPics((prev) => ({
+      ...prev,
+      [tradeId]: { ...prev[tradeId], mode, url: prev[tradeId]?.url || '' },
+    }));
+  };
+  
+  const handleTradeDataPicChange = (tradeId, value) => {
+    setTradeDataPics((prev) => ({
+      ...prev,
+      [tradeId]: { ...prev[tradeId], mode: 'url', url: value },
+    }));
+  };
   const [tradeTakeProfits, setTradeTakeProfits] = useState<Record<string, string>>({});
 
   // Compounding fields
@@ -112,7 +126,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
       const exitNotesInit: Record<string, string> = {};
       const entryPicsInit: Record<string, string> = {};
       const exitPicsInit: Record<string, string> = {};
-      const dataPicsInit: Record<string, string> = {}; // ----- new
+      const dataPicsInit: Record<string, { mode: 'file' | 'url'; url: string }> = {}; // ----- new
       const takeProfitsInit: Record<string, string> = {};
       
       parsedTrades.forEach((trade: Trade) => {
@@ -121,7 +135,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
         exitNotesInit[trade.tradeId] = trade.notes || '';
         entryPicsInit[trade.tradeId] = trade.entryPicUrl || '';
         exitPicsInit[trade.tradeId] = trade.exitPicUrl || '';
-        dataPicsInit[trade.tradeId] = trade.dataPicUrl || ''; // ----- new
+        dataPicsInit[trade.tradeId] = { mode: 'url', url: trade.dataPicUrl || '' }; // ----- new
         takeProfitsInit[trade.tradeId] = trade.takeProfitPrice ? trade.takeProfitPrice.toString() : '';
       });
       
@@ -220,7 +234,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
       midTradeNotes: tradeMidNotes[trade.tradeId] || trade.midTradeNotes,
       entryPicUrl: tradeEntryPics[trade.tradeId] || trade.entryPicUrl,
       exitPicUrl: tradeExitPics[trade.tradeId] || trade.exitPicUrl,
-      dataPicUrl: tradeDataPics[trade.tradeId] || '',
+      dataPicUrl: tradeDataPics[trade.tradeId]?.url || '',
       takeProfitPrice: tradeTakeProfits[trade.tradeId] ? parseFloat(tradeTakeProfits[trade.tradeId]) : trade.takeProfitPrice
     }));
     
@@ -457,8 +471,8 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     setEntryPrice('');
     setStopLoss('');
     setTakeProfitPrice('');
-    setRiskAmount('20');
-    setAvailableCapital('1000');
+    setRiskAmount('8');
+    setAvailableCapital('100');
     setTakerFee('0.055');
     setMakerFee('0.02');
     setDirection('long');
@@ -548,7 +562,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
         fee: entryTaker ? parseFloat(takerFee) : parseFloat(makerFee),
         systemName: systemName || '',
         entryPicUrl: entryPicUrl || '',
-        dataPicUrl: '', // Added for Data Pic integration
+        dataPicUrl: tradeDataPics[result.tradeId]?.url || '', // Added for Data Pic integration
         entryNotes: notes || '',
         midTradeNotes: '',
         notes: '',
@@ -565,7 +579,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
       setTradeExitNotes(prev => ({ ...prev, [result.tradeId]: '' }));
       setTradeEntryPics(prev => ({ ...prev, [result.tradeId]: entryPicUrl || '' }));
       setTradeExitPics(prev => ({ ...prev, [result.tradeId]: '' }));
-      setTradeDataPics(prev => ({ ...prev, [result.tradeId]: '' })); // Initialize Data Pic state
+      setTradeDataPics(prev => ({ ...prev, [result.tradeId]: { mode: 'file', url: '' } })); // Initialize with proper structure
       setTradeTakeProfits(prev => ({ 
         ...prev, 
         [result.tradeId]: takeProfitPrice || ''
@@ -602,9 +616,9 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     setTradeExitPics(prev => ({ ...prev, [tradeId]: value }));
   };
 
-  const handleTradeDataPicChange = (tradeId: string, value: string) => {
-  setTradeDataPics(prev => ({ ...prev, [tradeId]: value })); // ------ new
-  };
+  // const handleTradeDataPicChange = (tradeId: string, value: string) => {
+  // setTradeDataPics(prev => ({ ...prev, [tradeId]: value })); // ------ new
+  // };
 
   const handleTradeTakeProfitChange = (tradeId: string, value: string) => {
     setTradeTakeProfits(prev => ({ ...prev, [tradeId]: value }));
@@ -629,7 +643,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
       const closeData = {
         notes: tradeExitNotes[selectedTrade] || '',
         exitPicUrl: tradeExitPics[selectedTrade] || '',
-        dataPicUrl: tradeDataPics[selectedTrade] || '', // ----new 
+        dataPicUrl: tradeDataPics[selectedTrade]?.url || '', // ----new 
         entryNotes: tradeEntryNotes[selectedTrade] || '',
         midTradeNotes: tradeMidNotes[selectedTrade] || '',
         entryPicUrl: tradeEntryPics[selectedTrade] || '', // Added entryPicUrl
@@ -663,6 +677,45 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     }
   };
 
+  // handleTradeDataPicUpload Function
+  const handleTradeDataPicUpload = async (tradeId, file) => {
+    if (!file) return;
+  
+    try {
+      if (!supabase) {
+        console.error('Supabase client is not initialized');
+        return;
+      }
+  
+      const fileName = `trade-data-pics/${tradeId}-${Date.now()}.${file.name.split('.').pop()}`;
+      const { error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(fileName, file, {
+          contentType: file.type,
+        });
+  
+      if (uploadError) {
+        console.error('Error uploading image to Supabase:', uploadError);
+        return;
+      }
+  
+      const { data } = supabase.storage.from('images').getPublicUrl(fileName);
+      const publicUrl = data.publicUrl;
+  
+      if (!publicUrl) {
+        console.error('Failed to retrieve public URL');
+        return;
+      }
+  
+      setTradeDataPics((prev) => ({
+        ...prev,
+        [tradeId]: { mode: 'file', url: publicUrl },
+      }));
+    } catch (error) {
+      console.error('Error handling image upload:', error);
+    }
+  };
+  
   return (
     <div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1439,19 +1492,42 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
 
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Data Picture URL
+                            Data Picture (Upload or URL)
                           </label>
-                          <input
-                            type="text"
-                            value={tradeDataPics[trade.tradeId] || ''}
-                            onChange={(e) => handleTradeDataPicChange(trade.tradeId, e.target.value)}
-                            className="w-full px-3 py-1.5 text-xs bg-white border border-gray-300 rounded-md"
-                            placeholder="https://example.com/data.png"
-                          />
-                          {tradeDataPics[trade.tradeId] && (
+                          <div className="flex gap-2 mb-2">
+                            <button
+                              onClick={() => setUploadMode(trade.tradeId, 'file')}
+                              className={`px-2 py-1 text-xs rounded-md ${tradeDataPics[trade.tradeId]?.mode === 'file' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+                            >
+                              Upload File
+                            </button>
+                            <button
+                              onClick={() => setUploadMode(trade.tradeId, 'url')}
+                              className={`px-2 py-1 text-xs rounded-md ${tradeDataPics[trade.tradeId]?.mode === 'url' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+                            >
+                              Enter URL
+                            </button>
+                          </div>
+                          {tradeDataPics[trade.tradeId]?.mode === 'file' || !tradeDataPics[trade.tradeId]?.mode ? (
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleTradeDataPicUpload(trade.tradeId, e.target.files?.[0])}
+                              className="w-full px-3 py-1.5 text-xs bg-white border border-gray-300 rounded-md"
+                            />
+                          ) : (
+                            <input
+                              type="text"
+                              value={tradeDataPics[trade.tradeId]?.url || ''}
+                              onChange={(e) => handleTradeDataPicChange(trade.tradeId, e.target.value)}
+                              className="w-full px-3 py-1.5 text-xs bg-white border border-gray-300 rounded-md"
+                              placeholder="https://example.com/data.png"
+                            />
+                          )}
+                          {tradeDataPics[trade.tradeId]?.url && (
                             <div className="mt-1 p-1 border border-gray-200 rounded-md">
                               <img 
-                                src={tradeDataPics[trade.tradeId]} 
+                                src={tradeDataPics[trade.tradeId]?.url} 
                                 alt="Data chart" 
                                 className="max-h-28 object-contain mx-auto"
                                 onError={(e) => {

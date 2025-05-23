@@ -688,6 +688,7 @@ async function processCloseTrade(supabase, bot, webhook, alertData, apiKey, requ
   // Otherwise, assume TP/SL was hit and Bybit handled the closure
   const shouldExecuteOrder = (closeReason === 'signal') ||
                            (closeReason === 'partial_close') ||
+                           (closeReason === 'Close TP') ||
                            (!openTrade.stop_loss && !openTrade.take_profit);
   
   if (shouldExecuteOrder) {

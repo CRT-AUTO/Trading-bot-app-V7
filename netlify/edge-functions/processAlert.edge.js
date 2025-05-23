@@ -1226,10 +1226,23 @@ export default async function handler(request, context) {
       );
     }
 
-    // Get the state from alert data (default to "open" if not provided)
-    const tradeState = alertData.state || "open";
-    console.log(`Alert data state: ${tradeState}`);
-
+    // Preprocess alertData.state to align with expected "open" or "close"
+    let tradeState = 'open';
+    let closeReason = 'none';
+    
+    if (alertData.state === 'Entry') {
+      tradeState = 'open';
+    } else {
+      tradeState = 'close';
+      closeReason = alertData.state; // "Close SL" or "Close TP"
+    }
+    
+    // Update alertData with standardized values
+    alertData.state = tradeState;
+    alertData.close_reason = closeReason;
+    
+    console.log(`Processed alert data - state: ${alertData.state}, close_reason: ${alertData.close_reason}`);
+    Explanation
     // Load bot config + API key
     const bot = webhook.bots;
     

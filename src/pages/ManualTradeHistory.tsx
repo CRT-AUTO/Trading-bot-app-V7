@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../contexts/SupabaseContext';
 import { useAuth } from '../contexts/AuthContext';
 import { format } from 'date-fns';
-import { RefreshCw, Search, Download, ArrowUp, ArrowDown, Info, Calculator, CheckCircle, XCircle } from 'lucide-react';
+import { RefreshCw, Search, Download, ArrowUp, ArrowDown, Info, Calculator, CheckCircle, XCircle, PieChart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 type ManualTrade = {
@@ -368,6 +368,14 @@ const ManualTradeHistory: React.FC = () => {
         <h1 className="text-2xl font-bold">Manual Trades History</h1>
         
         <div className="flex gap-3">
+          <Link
+            to="/manual-trades-analytics"
+            className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+          >
+            <PieChart size={18} className="mr-2" />
+            <span>Trade Analytics</span>
+          </Link>
+          
           <Link
             to="/manual-trades"
             className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
@@ -937,7 +945,7 @@ const ManualTradeHistory: React.FC = () => {
                   )
                 )}
 
-            {editMode ? (
+                {editMode ? (
                   <div className="col-span-2 mt-2">
                     <p className="text-sm text-gray-500 mb-1">Data Picture URL</p>
                     <input

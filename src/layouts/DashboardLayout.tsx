@@ -25,6 +25,7 @@ const DashboardLayout: React.FC = () => {
     { path: '/manual-trades', label: 'Manual Trading', icon: <Calculator size={20} /> },
     { path: '/manual-trades-history', label: 'Manual Trades', icon: <ChartBar size={20} /> },
     { path: '/manual-trades-analytics', label: 'Trade Analytics', icon: <PieChart size={20} /> },
+    { path: '/r-value-tracker', label: 'R Value Tracker', icon: <LineChart size={20} /> },
     { path: '/analytics', label: 'Bot Analytics', icon: <BarChart size={20} /> },
     { path: '/settings', label: 'Settings', icon: <Settings size={20} /> },
     { path: '/docs', label: 'Documentation', icon: <FileText size={20} /> },

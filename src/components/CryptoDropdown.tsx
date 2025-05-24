@@ -24,11 +24,19 @@ export const CryptoDropdown: React.FC<CryptoDropdownProps> = ({
     { symbol: 'ADAUSDT', name: 'Cardano (ADA)' },
     { symbol: 'DOGEUSDT', name: 'Dogecoin (DOGE)' },
     { symbol: 'DOTUSDT', name: 'Polkadot (DOT)' },
+    { symbol: 'SUIUSDT', name: 'Sui (SUI)' },
+    { symbol: 'AVAXUSDT', name: 'Avalanche (AVAX)' },
+    { symbol: 'MATICUSDT', name: 'Polygon (MATIC)' },
+    { symbol: 'NEARUSDT', name: 'Near Protocol (NEAR)' },
+    { symbol: 'ATOMUSDT', name: 'Cosmos (ATOM)' },
     
     // Perpetual markets
     { symbol: 'BTCUSDTPERP', name: 'Bitcoin Perp (BTC/USDTP)' },
     { symbol: 'ETHUSDTPERP', name: 'Ethereum Perp (ETH/USDTP)' },
-    { symbol: 'SOLUSDTPERP', name: 'Solana Perp (SOL/USDTP)' }
+    { symbol: 'SOLUSDTPERP', name: 'Solana Perp (SOL/USDTP)' },
+    { symbol: 'SUIUSDTPERP', name: 'Sui Perp (SUI/USDTP)' },
+    { symbol: 'BNBUSDTPERP', name: 'Binance Coin Perp (BNB/USDTP)' },
+    { symbol: 'XRPUSDTPERP', name: 'Ripple Perp (XRP/USDTP)' }
   ];
   
   // State to track if dropdown is open

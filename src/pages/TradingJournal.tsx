@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSupabase } from '../contexts/SupabaseContext';
 import { useAuth } from '../contexts/AuthContext';
 import { format, parseISO, subDays, addDays, isToday } from 'date-fns';
-import { RefreshCw, Save, Calendar, ChevronLeft, ChevronRight, Book, PencilLine, DollarSign } from 'lucide-react';
+import { RefreshCw, Save, Calendar, ChevronLeft, ChevronRight, Book, PencilLine, DollarSign, ImageIcon, ExternalLink, ArrowDown, ArrowUp } from 'lucide-react';
 
 // Trade interface for displaying trades in the journal
 interface Trade {
@@ -143,6 +143,7 @@ const MarketAnalysis: React.FC<{
   </div>
 );
 
+// Enhanced CoinAnalysis component with image uploads
 const CoinAnalysis: React.FC<{
   coin: string,
   structure: string, setStructure: (value: string) => void,
@@ -152,7 +153,12 @@ const CoinAnalysis: React.FC<{
   atr15M: string, setAtr15M: (value: string) => void,
   sentiment1H: string, setSentiment1H: (value: string) => void,
   macd1H: string, setMacd1H: (value: string) => void,
-  score: string, setScore: (value: string) => void
+  score: string, setScore: (value: string) => void,
+  notes: string, setNotes: (value: string) => void,
+  entryChartUrl: string, setEntryChartUrl: (value: string) => void,
+  exitChartUrl: string, setExitChartUrl: (value: string) => void,
+  dataChartUrl: string, setDataChartUrl: (value: string) => void,
+  isExpanded: boolean, toggleExpand: () => void
 }> = ({
   coin,
   structure, setStructure,
@@ -162,11 +168,25 @@ const CoinAnalysis: React.FC<{
   atr15M, setAtr15M,
   sentiment1H, setSentiment1H,
   macd1H, setMacd1H,
-  score, setScore
+  score, setScore,
+  notes, setNotes,
+  entryChartUrl, setEntryChartUrl,
+  exitChartUrl, setExitChartUrl,
+  dataChartUrl, setDataChartUrl,
+  isExpanded, toggleExpand
 }) => (
   <div className="mb-4 bg-gray-200 p-2">
     <div className="grid grid-cols-6">
-      <div className="col-span-1 font-bold text-center py-2">{coin}</div>
+      <div className="col-span-1 font-bold text-center py-2 flex items-center justify-between px-2">
+        <span className="text-lg">{coin}</span>
+        <button 
+          onClick={toggleExpand}
+          className="p-1 rounded hover:bg-gray-300"
+          title={isExpanded ? "Collapse" : "Expand"}
+        >
+          {isExpanded ? <ArrowUp size={16} /> : <ArrowDown size={16} />}
+        </button>
+      </div>
       <div className="col-span-5">
         <div className="grid grid-cols-5 gap-1">
           <div className="col-span-5 flex">
@@ -254,6 +274,137 @@ const CoinAnalysis: React.FC<{
         </div>
       </div>
     </div>
+
+    {/* Expanded section with image uploads and notes */}
+    {isExpanded && (
+      <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-4 bg-white p-3 border border-gray-300 rounded-md">
+        {/* Image section for Entry Chart */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <label className="font-medium text-sm text-gray-700">Entry Chart</label>
+            {entryChartUrl && (
+              <a 
+                href={entryChartUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 text-xs flex items-center"
+              >
+                <ExternalLink size={12} className="mr-1" /> Open
+              </a>
+            )}
+          </div>
+          <input
+            type="text"
+            value={entryChartUrl}
+            onChange={(e) => setEntryChartUrl(e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
+            placeholder="https://example.com/chart.png"
+          />
+          {entryChartUrl && (
+            <div className="mt-1 border border-gray-200 rounded overflow-hidden">
+              <div className="relative pt-[75%] bg-gray-100">
+                <img 
+                  src={entryChartUrl} 
+                  alt={`${coin} Entry Chart`}
+                  className="absolute inset-0 h-full w-full object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://placehold.co/400x300?text=Invalid+Image+URL';
+                  }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Image section for Exit Chart */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <label className="font-medium text-sm text-gray-700">Exit Chart</label>
+            {exitChartUrl && (
+              <a 
+                href={exitChartUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 text-xs flex items-center"
+              >
+                <ExternalLink size={12} className="mr-1" /> Open
+              </a>
+            )}
+          </div>
+          <input
+            type="text"
+            value={exitChartUrl}
+            onChange={(e) => setExitChartUrl(e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
+            placeholder="https://example.com/chart.png"
+          />
+          {exitChartUrl && (
+            <div className="mt-1 border border-gray-200 rounded overflow-hidden">
+              <div className="relative pt-[75%] bg-gray-100">
+                <img 
+                  src={exitChartUrl} 
+                  alt={`${coin} Exit Chart`}
+                  className="absolute inset-0 h-full w-full object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://placehold.co/400x300?text=Invalid+Image+URL';
+                  }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Image section for Data Chart */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <label className="font-medium text-sm text-gray-700">Data Chart</label>
+            {dataChartUrl && (
+              <a 
+                href={dataChartUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 text-xs flex items-center"
+              >
+                <ExternalLink size={12} className="mr-1" /> Open
+              </a>
+            )}
+          </div>
+          <input
+            type="text"
+            value={dataChartUrl}
+            onChange={(e) => setDataChartUrl(e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
+            placeholder="https://example.com/chart.png"
+          />
+          {dataChartUrl && (
+            <div className="mt-1 border border-gray-200 rounded overflow-hidden">
+              <div className="relative pt-[75%] bg-gray-100">
+                <img 
+                  src={dataChartUrl} 
+                  alt={`${coin} Data Chart`}
+                  className="absolute inset-0 h-full w-full object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://placehold.co/400x300?text=Invalid+Image+URL';
+                  }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Coin-specific notes section */}
+        <div className="md:col-span-3 space-y-2">
+          <label className="font-medium text-sm text-gray-700">{coin} Notes</label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md resize-none"
+            rows={4}
+            placeholder={`Add notes specific to ${coin} here...`}
+          />
+        </div>
+      </div>
+    )}
   </div>
 );
 
@@ -553,6 +704,8 @@ interface JournalData {
   bybitFunding: string;
   binanceOI: string;
   binanceFunding: string;
+  
+  // BTC fields
   btcStructure: string;
   btcFirst2H: string;
   btcSentiment15M: string;
@@ -561,6 +714,12 @@ interface JournalData {
   btcSentiment1H: string;
   btcMacd1H: string;
   btcScore: string;
+  btcNotes: string;  // Added
+  btcEntryChartUrl: string;  // Added
+  btcExitChartUrl: string;  // Added
+  btcDataChartUrl: string;  // Added
+  
+  // ETH fields
   ethStructure: string;
   ethFirst2H: string;
   ethSentiment15M: string;
@@ -569,6 +728,12 @@ interface JournalData {
   ethSentiment1H: string;
   ethMacd1H: string;
   ethScore: string;
+  ethNotes: string;  // Added
+  ethEntryChartUrl: string;  // Added
+  ethExitChartUrl: string;  // Added
+  ethDataChartUrl: string;  // Added
+  
+  // SOL fields
   solStructure: string;
   solFirst2H: string;
   solSentiment15M: string;
@@ -577,6 +742,12 @@ interface JournalData {
   solSentiment1H: string;
   solMacd1H: string;
   solScore: string;
+  solNotes: string;  // Added
+  solEntryChartUrl: string;  // Added
+  solExitChartUrl: string;  // Added
+  solDataChartUrl: string;  // Added
+  
+  // BNB fields
   bnbStructure: string;
   bnbFirst2H: string;
   bnbSentiment15M: string;
@@ -585,6 +756,11 @@ interface JournalData {
   bnbSentiment1H: string;
   bnbMacd1H: string;
   bnbScore: string;
+  bnbNotes: string;  // Added
+  bnbEntryChartUrl: string;  // Added
+  bnbExitChartUrl: string;  // Added
+  bnbDataChartUrl: string;  // Added
+  
   health: string;
   total: string;
   afterThoughts: string;
@@ -613,6 +789,22 @@ const TradingJournal: React.FC = () => {
   const [hasPrevious, setHasPrevious] = useState(false);
   const [hasNext, setHasNext] = useState(false);
   const [dailyTrades, setDailyTrades] = useState<Trade[]>([]); // Added to store trades
+  
+  // State for expanded/collapsed coin sections
+  const [expandedCoins, setExpandedCoins] = useState<Record<string, boolean>>({
+    BTC: false,
+    ETH: false,
+    SOL: false,
+    BNB: false
+  });
+
+  // Toggle expansion of a coin section
+  const toggleCoinExpand = (coin: string) => {
+    setExpandedCoins(prev => ({
+      ...prev,
+      [coin]: !prev[coin]
+    }));
+  };
 
   // State for all journal sections
   const [journalData, setJournalData] = useState<JournalData>({
@@ -625,6 +817,7 @@ const TradingJournal: React.FC = () => {
     bybitFunding: '',
     binanceOI: '',
     binanceFunding: '',
+    
     btcStructure: '',
     btcFirst2H: '',
     btcSentiment15M: '',
@@ -633,6 +826,11 @@ const TradingJournal: React.FC = () => {
     btcSentiment1H: '',
     btcMacd1H: '',
     btcScore: '',
+    btcNotes: '',  // Added
+    btcEntryChartUrl: '',  // Added
+    btcExitChartUrl: '',  // Added
+    btcDataChartUrl: '',  // Added
+    
     ethStructure: '',
     ethFirst2H: '',
     ethSentiment15M: '',
@@ -641,6 +839,11 @@ const TradingJournal: React.FC = () => {
     ethSentiment1H: '',
     ethMacd1H: '',
     ethScore: '',
+    ethNotes: '',  // Added
+    ethEntryChartUrl: '',  // Added
+    ethExitChartUrl: '',  // Added
+    ethDataChartUrl: '',  // Added
+    
     solStructure: '',
     solFirst2H: '',
     solSentiment15M: '',
@@ -649,6 +852,11 @@ const TradingJournal: React.FC = () => {
     solSentiment1H: '',
     solMacd1H: '',
     solScore: '',
+    solNotes: '',  // Added
+    solEntryChartUrl: '',  // Added
+    solExitChartUrl: '',  // Added
+    solDataChartUrl: '',  // Added
+    
     bnbStructure: '',
     bnbFirst2H: '',
     bnbSentiment15M: '',
@@ -657,6 +865,11 @@ const TradingJournal: React.FC = () => {
     bnbSentiment1H: '',
     bnbMacd1H: '',
     bnbScore: '',
+    bnbNotes: '',  // Added
+    bnbEntryChartUrl: '',  // Added
+    bnbExitChartUrl: '',  // Added
+    bnbDataChartUrl: '',  // Added
+    
     health: '',
     total: '',
     afterThoughts: '',
@@ -747,6 +960,7 @@ const TradingJournal: React.FC = () => {
           bybitFunding: '',
           binanceOI: '',
           binanceFunding: '',
+          
           btcStructure: '',
           btcFirst2H: '',
           btcSentiment15M: '',
@@ -755,6 +969,11 @@ const TradingJournal: React.FC = () => {
           btcSentiment1H: '',
           btcMacd1H: '',
           btcScore: '',
+          btcNotes: '',  // Added
+          btcEntryChartUrl: '',  // Added
+          btcExitChartUrl: '',  // Added
+          btcDataChartUrl: '',  // Added
+          
           ethStructure: '',
           ethFirst2H: '',
           ethSentiment15M: '',
@@ -763,6 +982,11 @@ const TradingJournal: React.FC = () => {
           ethSentiment1H: '',
           ethMacd1H: '',
           ethScore: '',
+          ethNotes: '',  // Added
+          ethEntryChartUrl: '',  // Added
+          ethExitChartUrl: '',  // Added
+          ethDataChartUrl: '',  // Added
+          
           solStructure: '',
           solFirst2H: '',
           solSentiment15M: '',
@@ -771,6 +995,11 @@ const TradingJournal: React.FC = () => {
           solSentiment1H: '',
           solMacd1H: '',
           solScore: '',
+          solNotes: '',  // Added
+          solEntryChartUrl: '',  // Added
+          solExitChartUrl: '',  // Added
+          solDataChartUrl: '',  // Added
+          
           bnbStructure: '',
           bnbFirst2H: '',
           bnbSentiment15M: '',
@@ -779,6 +1008,11 @@ const TradingJournal: React.FC = () => {
           bnbSentiment1H: '',
           bnbMacd1H: '',
           bnbScore: '',
+          bnbNotes: '',  // Added
+          bnbEntryChartUrl: '',  // Added
+          bnbExitChartUrl: '',  // Added
+          bnbDataChartUrl: '',  // Added
+          
           health: '',
           total: '',
           afterThoughts: '',
@@ -1013,6 +1247,16 @@ const TradingJournal: React.FC = () => {
               setMacd1H={(value) => updateField('btcMacd1H', value)}
               score={journalData.btcScore}
               setScore={(value) => updateField('btcScore', value)}
+              notes={journalData.btcNotes}
+              setNotes={(value) => updateField('btcNotes', value)}
+              entryChartUrl={journalData.btcEntryChartUrl}
+              setEntryChartUrl={(value) => updateField('btcEntryChartUrl', value)}
+              exitChartUrl={journalData.btcExitChartUrl}
+              setExitChartUrl={(value) => updateField('btcExitChartUrl', value)}
+              dataChartUrl={journalData.btcDataChartUrl}
+              setDataChartUrl={(value) => updateField('btcDataChartUrl', value)}
+              isExpanded={expandedCoins.BTC}
+              toggleExpand={() => toggleCoinExpand('BTC')}
             />
 
             <CoinAnalysis
@@ -1033,6 +1277,16 @@ const TradingJournal: React.FC = () => {
               setMacd1H={(value) => updateField('ethMacd1H', value)}
               score={journalData.ethScore}
               setScore={(value) => updateField('ethScore', value)}
+              notes={journalData.ethNotes}
+              setNotes={(value) => updateField('ethNotes', value)}
+              entryChartUrl={journalData.ethEntryChartUrl}
+              setEntryChartUrl={(value) => updateField('ethEntryChartUrl', value)}
+              exitChartUrl={journalData.ethExitChartUrl}
+              setExitChartUrl={(value) => updateField('ethExitChartUrl', value)}
+              dataChartUrl={journalData.ethDataChartUrl}
+              setDataChartUrl={(value) => updateField('ethDataChartUrl', value)}
+              isExpanded={expandedCoins.ETH}
+              toggleExpand={() => toggleCoinExpand('ETH')}
             />
 
             <CoinAnalysis
@@ -1053,6 +1307,16 @@ const TradingJournal: React.FC = () => {
               setMacd1H={(value) => updateField('solMacd1H', value)}
               score={journalData.solScore}
               setScore={(value) => updateField('solScore', value)}
+              notes={journalData.solNotes}
+              setNotes={(value) => updateField('solNotes', value)}
+              entryChartUrl={journalData.solEntryChartUrl}
+              setEntryChartUrl={(value) => updateField('solEntryChartUrl', value)}
+              exitChartUrl={journalData.solExitChartUrl}
+              setExitChartUrl={(value) => updateField('solExitChartUrl', value)}
+              dataChartUrl={journalData.solDataChartUrl}
+              setDataChartUrl={(value) => updateField('solDataChartUrl', value)}
+              isExpanded={expandedCoins.SOL}
+              toggleExpand={() => toggleCoinExpand('SOL')}
             />
 
             <CoinAnalysis
@@ -1073,6 +1337,16 @@ const TradingJournal: React.FC = () => {
               setMacd1H={(value) => updateField('bnbMacd1H', value)}
               score={journalData.bnbScore}
               setScore={(value) => updateField('bnbScore', value)}
+              notes={journalData.bnbNotes}
+              setNotes={(value) => updateField('bnbNotes', value)}
+              entryChartUrl={journalData.bnbEntryChartUrl}
+              setEntryChartUrl={(value) => updateField('bnbEntryChartUrl', value)}
+              exitChartUrl={journalData.bnbExitChartUrl}
+              setExitChartUrl={(value) => updateField('bnbExitChartUrl', value)}
+              dataChartUrl={journalData.bnbDataChartUrl}
+              setDataChartUrl={(value) => updateField('bnbDataChartUrl', value)}
+              isExpanded={expandedCoins.BNB}
+              toggleExpand={() => toggleCoinExpand('BNB')}
             />
 
             <HealthMetrics
@@ -1121,7 +1395,7 @@ const TradingJournal: React.FC = () => {
               onChange={(value) => updateField('finalThoughts', value)}
             />
 
-            {/* Updated Trades component to show trades from database */}
+            {/* Trades component with actual trade data */}
             <div className="mb-6">
               <h3 className="font-medium text-sm bg-cyan-500 text-white py-2 px-4 mb-2 text-center">Trades</h3>
               

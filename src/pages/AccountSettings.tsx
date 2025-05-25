@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import { RefreshCw, Key, Shield, AlertTriangle, CheckCircle, XCircle, Clipboard, Plus, Trash2, Edit, AlertCircle, Database } from 'lucide-react';
+import { RefreshCw, Key, Shield, AlertTriangle, CheckCircle, XCircle, Clipboard, Plus, Trash2, Edit, AlertCircle, Database, FileText, LogOut } from 'lucide-react';
 import { useSupabase } from '../contexts/SupabaseContext';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -35,7 +35,7 @@ type PasswordFormData = {
 
 const AccountSettings: React.FC = () => {
   const { supabase } = useSupabase();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
@@ -313,6 +313,14 @@ const AccountSettings: React.FC = () => {
     } catch (error) {
       console.error('Error setting default API key:', error);
       alert('Failed to set default API key');
+    }
+  };
+
+  // Handle sign out
+  const handleSignOut = async () => {
+    if (confirm('Are you sure you want to sign out?')) {
+      await signOut();
+      navigate('/login');
     }
   };
 
@@ -644,6 +652,48 @@ const AccountSettings: React.FC = () => {
           >
             <Clipboard size={16} className="mr-2" />
             View System Logs
+          </button>
+        </div>
+
+        {/* Documentation Section - Added */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center mb-4">
+            <FileText className="text-blue-600 mr-2" size={20} />
+            <h2 className="text-xl font-semibold">Documentation</h2>
+          </div>
+          
+          <p className="text-gray-700 mb-4">
+            Learn how to use the trading platform effectively. Our documentation includes guides 
+            on setting up bots, connecting to TradingView, manual trading, and best practices.
+          </p>
+          
+          <button
+            onClick={() => navigate('/docs')}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            <FileText size={16} className="mr-2" />
+            View Documentation
+          </button>
+        </div>
+
+        {/* Sign Out Section - Added */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center mb-4">
+            <LogOut className="text-red-600 mr-2" size={20} />
+            <h2 className="text-xl font-semibold">Sign Out</h2>
+          </div>
+          
+          <p className="text-gray-700 mb-4">
+            Sign out of your account to end your current session. For security, we recommend signing out 
+            when using a shared or public computer.
+          </p>
+          
+          <button
+            onClick={handleSignOut}
+            className="flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+          >
+            <LogOut size={16} className="mr-2" />
+            Sign Out
           </button>
         </div>
       </div>

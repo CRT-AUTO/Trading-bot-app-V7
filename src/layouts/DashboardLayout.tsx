@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Bot, LineChart, History, Settings, FileText, LogOut, BarChart3, BarChart, Calculator, BarChart as ChartBar, ChevronLeft, ChevronRight, Menu, PieChart } from 'lucide-react';
+import { Bot, History, Settings, Menu, BarChart3, BarChart, Calculator, BarChart as ChartBar, ChevronLeft, ChevronRight, PieChart, Book, LineChart } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const DashboardLayout: React.FC = () => {
@@ -9,26 +9,31 @@ const DashboardLayout: React.FC = () => {
   const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/login');
-  };
-
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };
 
-  const navItems = [
-    { path: '/', label: 'Dashboard', icon: <BarChart3 size={20} /> },
+  // Group navigation items by category
+  const botItems = [
     { path: '/bots', label: 'Bots', icon: <Bot size={20} /> },
     { path: '/trades', label: 'Bot Trades', icon: <History size={20} /> },
-    { path: '/manual-trades', label: 'Manual Trading', icon: <Calculator size={20} /> },
-    { path: '/manual-trades-history', label: 'Manual Trades', icon: <ChartBar size={20} /> },
-    { path: '/manual-trades-analytics', label: 'Trade Analytics', icon: <PieChart size={20} /> },
-    { path: '/r-value-tracker', label: 'R Value Tracker', icon: <LineChart size={20} /> },
     { path: '/analytics', label: 'Bot Analytics', icon: <BarChart size={20} /> },
+  ];
+  
+  const manualTradeItems = [
+    { path: '/manual-trades', label: 'Manual Trading', icon: <Calculator size={20} /> },
+    { path: '/manual-trades-history', label: 'Trade History', icon: <ChartBar size={20} /> },
+    { path: '/manual-trades-analytics', label: 'Trade Analytics', icon: <PieChart size={20} /> },
+  ];
+  
+  const journalItems = [
+    { path: '/r-value-tracker', label: 'R Value Tracker', icon: <LineChart size={20} /> },
+    { path: '/journal', label: 'Trading Journal', icon: <Book size={20} /> },
+  ];
+
+  const generalItems = [
+    { path: '/', label: 'Dashboard', icon: <BarChart3 size={20} /> },
     { path: '/settings', label: 'Settings', icon: <Settings size={20} /> },
-    { path: '/docs', label: 'Documentation', icon: <FileText size={20} /> },
   ];
 
   // Check if the current path matches the nav item path
@@ -43,6 +48,37 @@ const DashboardLayout: React.FC = () => {
       (path === '/bots' && location.pathname.startsWith('/bots/')) ||
       // Special case for /analytics/:botId route
       (path === '/analytics' && location.pathname.startsWith('/analytics/'));
+  };
+
+  // Render navigation section with title
+  const renderNavSection = (title: string, items: any[]) => {
+    return (
+      <div className="mb-4">
+        {!sidebarCollapsed && (
+          <h3 className="px-6 my-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            {title}
+          </h3>
+        )}
+        <ul>
+          {items.map((item) => (
+            <li key={item.path}>
+              <Link
+                to={item.path}
+                className={`flex items-center px-6 py-3 hover:bg-blue-50 hover:text-blue-600 transition-colors ${
+                  sidebarCollapsed ? 'md:justify-center md:px-2' : ''
+                } ${
+                  isActiveRoute(item.path) ? 'bg-blue-50 text-blue-600 border-r-4 border-blue-600' : 'text-gray-600'
+                }`}
+                title={sidebarCollapsed ? item.label : undefined}
+              >
+                {item.icon}
+                {!sidebarCollapsed && <span className="ml-3">{item.label}</span>}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
   };
 
   return (
@@ -62,7 +98,7 @@ const DashboardLayout: React.FC = () => {
       <aside 
         className={`${
           sidebarCollapsed ? 'hidden md:flex md:w-16' : 'w-64'
-        } bg-white shadow-md flex-shrink-0 flex-col z-10 transition-all duration-300 ease-in-out`}
+        } bg-white shadow-md flex-shrink-0 flex flex-col z-10 transition-all duration-300 ease-in-out`}
       >
         <div className={`p-6 ${sidebarCollapsed ? 'md:p-4' : ''}`}>
           <h1 className={`text-xl font-bold flex items-center ${sidebarCollapsed ? 'md:justify-center' : ''}`}>
@@ -70,35 +106,11 @@ const DashboardLayout: React.FC = () => {
             {!sidebarCollapsed && <span>Trading Bot</span>}
           </h1>
         </div>
-        <nav className="mt-6 flex-1">
-          <ul>
-            {navItems.map((item) => (
-              <li key={item.path}>
-                <Link
-                  to={item.path}
-                  className={`flex items-center px-6 py-3 hover:bg-blue-50 hover:text-blue-600 transition-colors ${
-                    sidebarCollapsed ? 'md:justify-center md:px-2' : ''
-                  } ${
-                    isActiveRoute(item.path) ? 'bg-blue-50 text-blue-600 border-r-4 border-blue-600' : 'text-gray-600'
-                  }`}
-                  title={sidebarCollapsed ? item.label : undefined}
-                >
-                  {item.icon}
-                  {!sidebarCollapsed && <span className="ml-3">{item.label}</span>}
-                </Link>
-              </li>
-            ))}
-          </ul>
-          <div className={`px-6 py-4 mt-auto ${sidebarCollapsed ? 'md:px-2 md:flex md:justify-center' : ''}`}>
-            <button
-              onClick={handleSignOut}
-              className="flex items-center text-gray-600 hover:text-blue-600 transition-colors"
-              title={sidebarCollapsed ? "Sign Out" : undefined}
-            >
-              <LogOut size={20} />
-              {!sidebarCollapsed && <span className="ml-3">Sign Out</span>}
-            </button>
-          </div>
+        <nav className="mt-6 flex-1 overflow-y-auto">
+          {renderNavSection("General", generalItems)}
+          {renderNavSection("Bots", botItems)}
+          {renderNavSection("Manual Trading", manualTradeItems)}
+          {renderNavSection("Journal", journalItems)}
         </nav>
         {/* Collapse/Expand button */}
         <div className="hidden md:block p-4 border-t border-gray-200">

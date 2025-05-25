@@ -24,7 +24,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
   const [entryPrice, setEntryPrice] = useState<string>('');
   const [stopLoss, setStopLoss] = useState<string>('');
   const [takeProfitPrice, setTakeProfitPrice] = useState<string>('');
-  const [riskAmount, setRiskAmount] = useState<string>('1');
+  const [riskAmount, setRiskAmount] = useState<string>('');
   const [availableCapital, setAvailableCapital] = useState<string>('100');
   const [takerFee, setTakerFee] = useState<string>('0.055');
   const [makerFee, setMakerFee] = useState<string>('0.02');
@@ -126,7 +126,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
       const settings = JSON.parse(savedSettings);
       setTakerFee(settings.takerFee || '0.055');
       setMakerFee(settings.makerFee || '0.02');
-      setRiskAmount(settings.riskAmount || '2');
+      setRiskAmount(settings.riskAmount || '12');
       setAvailableCapital(settings.availableCapital || '100');
       setDecimalPlaces(settings.decimalPlaces || 4);
       setEntryTaker(settings.entryTaker !== undefined ? settings.entryTaker : true);
@@ -426,7 +426,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
     setEntryPrice('');
     setStopLoss('');
     setTakeProfitPrice('');
-    setRiskAmount('8');
+    setRiskAmount('12');
     setAvailableCapital('100');
     setTakerFee('0.055');
     setMakerFee('0.02');

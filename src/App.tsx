@@ -22,6 +22,7 @@ import ManualTradeHistory from './pages/ManualTradeHistory';
 import ManageSystems from './pages/ManageSystems';
 import ManualTradeAnalytics from './pages/ManualTradeAnalytics';
 import RValueTracker from './pages/RValueTracker';
+import TradingJournal from './pages/TradingJournal';
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -57,6 +58,7 @@ function App() {
               <Route path="manual-trades-history" element={<ManualTradeHistory />} />
               <Route path="manual-trades-analytics" element={<ManualTradeAnalytics />} />
               <Route path="r-value-tracker" element={<RValueTracker />} />
+              <Route path="journal" element={<TradingJournal />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="analytics/:botId" element={<Analytics />} />
               <Route path="settings" element={<AccountSettings />} />

@@ -112,8 +112,8 @@ const DashboardLayout: React.FC = () => {
           {renderNavSection("Manual Trading", manualTradeItems)}
           {renderNavSection("Journal", journalItems)}
         </nav>
-        {/* Collapse/Expand button */}
-        <div className="hidden md:block p-4 border-t border-gray-200">
+        {/* Collapse/Expand button - Changed to be visible on all screens */}
+        <div className="p-4 border-t border-gray-200">
           <button
             onClick={toggleSidebar}
             className="flex items-center justify-center w-full p-2 rounded-md hover:bg-gray-100 text-gray-500"

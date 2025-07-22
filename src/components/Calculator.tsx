@@ -126,7 +126,7 @@ export const Calculator: React.FC<CalculatorProps> = ({ livePrice, selectedCrypt
       const settings = JSON.parse(savedSettings);
       setTakerFee(settings.takerFee || '0.055');
       setMakerFee(settings.makerFee || '0.02');
-      setRiskAmount(settings.riskAmount || '12');
+      setRiskAmount(settings.riskAmount || '18');
       setAvailableCapital(settings.availableCapital || '100');
       setDecimalPlaces(settings.decimalPlaces || 4);
       setEntryTaker(settings.entryTaker !== undefined ? settings.entryTaker : true);
